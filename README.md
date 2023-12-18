@@ -56,11 +56,11 @@ FIFO (first-in, first-out) "Первым пришел - первым ушел»"
 
 **Способы реализации `Queue`**:
 
-- Queue через `Rc`
 - Queue через `Vec`
 - Queue через `Linked list`
 
 [VecDeque](https://doc.rust-lang.org/std/collections/struct.VecDeque.html)
+
  
 ## Linked list
 

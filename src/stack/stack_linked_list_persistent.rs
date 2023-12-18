@@ -2,12 +2,6 @@
 
 pub use ds_stack_persistent::List;
 ///! [Реализация неизменяемого stack на основе linked list](https://rust-unofficial.github.io/too-many-lists/third-final.html)
-///!
-///! Плюсы связного списка:
-///!    - динамический размер
-///! Минусы связного списка:
-///!    - поиск елемента за `O(n)` (в худшем случае), для двунаправленного `O(n/2)`
-///!
 mod ds_stack_persistent {
     use std::rc::Rc;
 

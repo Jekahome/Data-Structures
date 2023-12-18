@@ -102,7 +102,7 @@ mod ds_queue_rc {
     }
 }
 
-/// $ cargo test queue_rc
+/// $ cargo test queue_linked_list
 #[cfg(test)]
 mod tests {
     use super::*;

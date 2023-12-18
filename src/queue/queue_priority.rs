@@ -1,11 +1,9 @@
 #![allow(dead_code)]
 
-/// cargo run --lib queue-priority
-///
-/// Очередь с приоритетом - это особый тип очереди, в которой каждый элемент связан
-/// со значением приоритета .
-/// И элементы обслуживаются на основе их приоритета.
-/// То есть первыми обслуживаются элементы с более высоким приоритетом.
+///! Очередь с приоритетом - это особый тип очереди, в которой каждый элемент связан
+///! со значением приоритета.
+///! И элементы обслуживаются на основе их приоритета.
+///! То есть первыми обслуживаются элементы с более высоким приоритетом.
 pub use ds_queue_priority::{Priority,QueuePriority};
 mod ds_queue_priority{
 
@@ -178,7 +176,7 @@ mod ds_queue_priority{
             }
             None
         }
-        
+
         pub fn is_empty(&self) -> bool {
             self.queue_high.is_empty() && self.queue_middle.is_empty() && self.queue_low.is_empty()
         }
@@ -188,7 +186,6 @@ mod ds_queue_priority{
         }
     }
 
-    
     pub struct IterQueuePriority<'a,T>((usize,usize,usize),&'a QueuePriority<T>);
     impl<'a,T> IterQueuePriority<'a,T>{
         fn new(q:&'a QueuePriority<T>)->Self{
@@ -216,14 +213,12 @@ mod ds_queue_priority{
    
 }
 
-
- 
-/// $ cargo test queue_priority -- --nocapture
+/// $ cargo test queue_priority  
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /*#[test]
+    #[test]
     fn test_success() {
         let mut queue:QueuePriority<i32> = QueuePriority::new();
         queue.enqueue(18,Priority::LOW);
@@ -248,7 +243,7 @@ mod tests {
         assert_eq!(queue.dequeue(), Some(99));
         assert_eq!(queue.dequeue(), Some(6));
         assert_eq!(queue.dequeue(), Some(18));
-    }*/
+    }
 
     #[test]
     fn test_change_priority() {
@@ -264,7 +259,8 @@ mod tests {
         assert_eq!(Some(6), queue.dequeue());
     }
 
-    /*#[test]
+    // $ cargo test queue::queue_priority::tests::test_iter -- --nocapture
+    #[test]
     fn test_iter() {
         let mut queue:QueuePriority<i32> = QueuePriority::new();
         queue.enqueue(18,Priority::LOW);
@@ -298,6 +294,6 @@ mod tests {
         }
         assert_eq!(queue.peek(), Some(&99));
         assert_eq!(queue.dequeue(), Some(99));
-    }*/
+    }
    
 }
