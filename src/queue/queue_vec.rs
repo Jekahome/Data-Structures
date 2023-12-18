@@ -1,4 +1,4 @@
-///! Очередь следует правилу (FIFO) «первым пришел - первым ушел» 
+///! Очередь следует правилу (FIFO) «первым пришел - первым ушел»
 ///!
 ///! Основные операции с очередью:
 ///! - добавить элемент в конец очереди;
@@ -13,7 +13,7 @@ mod ds_queue {
     pub struct Queue<T> {
         queue: Vec<T>,
     }
-    impl<T:std::cmp::PartialEq> Queue<T>
+    impl<T: std::cmp::PartialEq> Queue<T>
     where
         T: Copy,
     {
@@ -41,10 +41,10 @@ mod ds_queue {
         pub fn is_empty(&self) -> bool {
             self.queue.is_empty()
         }
-        pub fn search(&mut self, item: T) -> Option<&mut T>{
+        pub fn search(&mut self, item: T) -> Option<&mut T> {
             if !self.is_empty() {
-                for el in self.queue.iter_mut(){
-                    if el == &item{
+                for el in self.queue.iter_mut() {
+                    if el == &item {
                         return Some(el);
                     }
                 }
@@ -88,7 +88,7 @@ mod tests {
         queue.enqueue(5);
 
         let item = queue.search(4).unwrap();
-        *item=99;
+        *item = 99;
 
         assert_eq!(queue.dequeue(), Some(1));
         assert_eq!(queue.dequeue(), Some(2));
@@ -110,8 +110,8 @@ mod tests {
         let mut queue: Queue<isize> = Queue::new();
         queue.enqueue(1);
         queue.enqueue(2);
-        if let Some(v) = queue.peek_mut(){
-            *v=99;
+        if let Some(v) = queue.peek_mut() {
+            *v = 99;
         }
         assert_eq!(queue.peek(), Some(&99));
         assert_eq!(queue.dequeue(), Some(99));

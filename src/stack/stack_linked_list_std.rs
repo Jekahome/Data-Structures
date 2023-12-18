@@ -6,7 +6,7 @@ use std::collections::LinkedList;
 /// $ cargo test stack_linked_list_std
 #[cfg(test)]
 mod test {
-    use super::*; 
+    use super::*;
 
     #[test]
     fn basics() {

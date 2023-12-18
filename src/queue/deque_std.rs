@@ -59,8 +59,8 @@ mod tests {
         let mut deque: VecDeque<isize> = VecDeque::new();
         deque.push_back(1);
         deque.push_back(2);
-        if let Some(v) = deque.front_mut(){
-            *v=99;
+        if let Some(v) = deque.front_mut() {
+            *v = 99;
         }
         assert_eq!(deque.front(), Some(&99));
         assert_eq!(deque.pop_front(), Some(99));
@@ -77,5 +77,3 @@ mod tests {
         assert_eq!(deque.is_empty(), true);
     }
 }
-
- 
