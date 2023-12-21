@@ -24,65 +24,7 @@ mod ds_binary_tree{
         parent: Link<T>,
         elem: T,
     }
-
-    pub struct IterInOrder<'a, T: PartialEq + PartialOrd + Display> {
-        current_node: Link<T>,
-        count: usize,
-        elem: Option<&'a T>,
-        is_start: bool,
-        _boo: PhantomData<&'a T>,
-    }
-    impl<'a, T: PartialEq + PartialOrd + Display> IterInOrder<'a, T> {
-        fn new(root: Link<T>, count: usize) -> Self{
-                Self{
-                    current_node: root,
-                    count,
-                    elem: None,
-                    is_start: false,
-                    _boo: PhantomData
-                }
-        }
-    }
-
-    impl<'a, T: PartialEq + PartialOrd + Display> Iterator for IterInOrder<'a, T> {
-        type Item = &'a T;
-
-        fn next(&mut self) -> Option<Self::Item> {
-            if !self.is_start{
-                self.is_start = true;
-                let node: Link<T> = leftmost_child_in_order(self.current_node);
-                self.current_node = node;
-            }
-            if self.count > 0{
-                self.count-=1;
-                if let Some(node) = self.current_node{
-                    unsafe {
-                        self.elem = Some(&(*node.as_ref()).elem);
-                    }
-                    self.current_node = successor_of_node_in_order(node);                      
-                }else{
-                    self.elem = None;
-                }              
-            }else{
-                self.elem = None;
-            }
-            self.elem 
-        }
-
-        fn size_hint(&self) -> (usize, Option<usize>) {
-            (self.count, Some(self.count))
-        }
-    }
-
-    impl<'a,T: PartialEq + PartialOrd + Display> std::iter::IntoIterator for &'a Tree<T> {
-        type IntoIter = IterInOrder<'a, T>;
-        type Item = &'a T;
-
-        fn into_iter(self) -> Self::IntoIter{
-            IterInOrder::new(self.root, self.count)
-        }
-    }
-
+ 
     impl<T: PartialEq + PartialOrd + Display> Tree<T> {
         pub fn new() -> Self {
             Self {
@@ -127,8 +69,9 @@ mod ds_binary_tree{
             "".into()
         }
 
-        /// Возвращает все данные дерева, посещенного в порядке очереди.
-        pub fn in_order(&self) -> Vec<&T> {
+        /// Возвращает все данные дерева
+        /// Метод прохода по дереву - поиск в глубину симметричным способом (In-order).
+        pub fn depth_first_in_order(&self) -> Vec<&T> {
             let mut v = vec![];
             if let Some(root) = self.root{
                 let mut node: Link<T> = leftmost_child_in_order(Some(root));
@@ -147,6 +90,18 @@ mod ds_binary_tree{
             v
         }
 
+        /// Возвращает все данные дерева
+        /// Метод прохода по дереву - поиск в глубину обратным способом (Post order).
+        pub fn depth_first_post_order(&self) -> Vec<&T> {
+            unimplemented!()
+        }
+
+        /// Возвращает все данные дерева
+        /// Метод прохода по дереву - поиск в глубину прямым способом (Pre order).
+        pub fn depth_first_pre_order(&self) -> Vec<&T> {
+            unimplemented!()
+        }
+
         /// Удаляем данный элемент из дерева; возвращает true, если такой узел был
         /// найдено и удалено, в противном случае — false.
         pub fn remove(&mut self, elem: T) -> bool{
@@ -159,8 +114,8 @@ mod ds_binary_tree{
             }
         }
 
-        /// Найти преемника данного элемента в дереве; преемником является
-        /// следующий элемент в обходе по порядку.
+        /// Найти следующий элемент данного элемента в дереве.  
+        /// Метод прохода по дереву - поиск в глубину симметричным способом (In-order).
         pub fn successor_in_order(&self, elem: T) -> Option<&T>{
             unsafe {
                 let node = find_node(self.root, elem);
@@ -171,6 +126,18 @@ mod ds_binary_tree{
                 }
                 None
             }
+        }
+
+        /// Найти следующий элемент данного элемента в дереве.  
+        /// Метод прохода по дереву - поиск в глубину обратным способом (Post order).
+        pub fn successor_post_order(&self, elem: T) -> Option<&T>{
+            unimplemented!()
+        }
+
+        /// Найти следующий элемент данного элемента в дереве. 
+        /// Метод прохода по дереву - поиск в глубину прямым способом (Pre order). 
+        pub fn successor_pre_order(&self, elem: T) -> Option<&T>{
+            unimplemented!()
         }
 
         // Удаляем данный узел из дерева.
@@ -234,7 +201,7 @@ mod ds_binary_tree{
             }
         }
 
-        pub fn iter(&self) -> IterInOrder<T> {
+        pub fn iter_in_order(&self) -> IterInOrder<T> {
             IterInOrder::new(self.root, self.count)
         }
       
@@ -250,6 +217,74 @@ mod ds_binary_tree{
         }
     }
     
+    impl<'a,T: PartialEq + PartialOrd + Display> std::iter::IntoIterator for &'a Tree<T> {
+        type IntoIter = IterInOrder<'a, T>;
+        type Item = &'a T;
+
+        fn into_iter(self) -> Self::IntoIter{
+            IterInOrder::new(self.root, self.count)
+        }
+    }
+
+    /// Итерация методом прохода по дереву - поиск в глубину симметричным способом (In-order)
+    use iter_depth_first_in_order::IterInOrder;
+    mod iter_depth_first_in_order{
+        use std::fmt::Display; 
+        use super::{Link,PhantomData};
+        use super::depth_first_in_order::{leftmost_child_in_order, successor_of_node_in_order};
+
+        pub struct IterInOrder<'a, T: PartialEq + PartialOrd + Display> {
+            current_node: Link<T>,
+            count: usize,
+            elem: Option<&'a T>,
+            is_start: bool,
+            _boo: PhantomData<&'a T>,
+        }
+
+        impl<'a, T: PartialEq + PartialOrd + Display> IterInOrder<'a, T> {
+            pub fn new(root: Link<T>, count: usize) -> Self{
+                    Self{
+                        current_node: root,
+                        count,
+                        elem: None,
+                        is_start: false,
+                        _boo: PhantomData
+                    }
+            }
+        }
+
+        impl<'a, T: PartialEq + PartialOrd + Display> Iterator for IterInOrder<'a, T> {
+            type Item = &'a T;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                if !self.is_start{
+                    self.is_start = true;
+                    let node: Link<T> = leftmost_child_in_order(self.current_node);
+                    self.current_node = node;
+                }
+                if self.count > 0{
+                    self.count-=1;
+                    if let Some(node) = self.current_node{
+                        unsafe {
+                            self.elem = Some(&(*node.as_ref()).elem);
+                        }
+                        self.current_node = successor_of_node_in_order(node);                      
+                    }else{
+                        self.elem = None;
+                    }              
+                }else{
+                    self.elem = None;
+                }
+                self.elem 
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                (self.count, Some(self.count))
+            }
+        }
+    }
+
+
     // опционально ------------------------------------------------------
     impl<T: PartialEq + PartialOrd + Display> Default for Tree<T> {
         fn default() -> Self {
@@ -291,7 +326,7 @@ mod ds_binary_tree{
 
     impl<T: PartialEq + PartialOrd + Display> PartialEq for Tree<T> {
         fn eq(&self, other: &Self) -> bool {
-            self.node_count() == other.node_count() && self.iter().eq(other)
+            self.node_count() == other.node_count() && self.iter_in_order().eq(other)
         }
     }
 
@@ -299,13 +334,13 @@ mod ds_binary_tree{
 
     impl<T: PartialEq + PartialOrd + Display> PartialOrd for Tree<T> {
         fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            self.iter().partial_cmp(other)
+            self.iter_in_order().partial_cmp(other)
         }
     }
 
     impl<T: Ord + PartialEq + PartialOrd + Display> Ord for Tree<T> {
         fn cmp(&self, other: &Self) -> Ordering {
-            self.iter().cmp(other)
+            self.iter_in_order().cmp(other)
         }
     }
 
@@ -367,8 +402,7 @@ mod ds_binary_tree{
         }
     }
 
-    // Возвращает строковое представление поддерева `node` с начальным
-    // уровень отступа.
+    // Возвращает строковое представление поддерева `node`.
     fn display_node<T: Display>(node: NonNull<Node<T>>, indent: usize) -> String {
         let indent_str = " ".repeat(indent);
         unsafe {
@@ -424,6 +458,23 @@ mod ds_binary_tree{
             }
         }
 
+        // Найдите преемника узла в дереве.
+        pub fn successor_of_node_in_order<T>(node: NonNull<Node<T>>) -> Link<T> {
+            unsafe {
+                if !(*node.as_ref()).right.is_none() {
+                    // Случай 1: узел имеет правого дочернего элемента; тогда преемником является
+                    // самый левый дочерний элемент этого правого дочернего элемента (или самого правого дочернего элемента, если
+                    // у него нет левых потомков).
+                    leftmost_child_in_order((*node.as_ref()).right)
+                } else {
+                    // Случай 2: нет правого дочернего элемента; затем пройдите по родительским ссылкам, чтобы найти
+                    // узел, левым дочерним элементом которого мы являемся. Не удалось найти такого родителя
+                    // до достижения корня означает, что преемника нет.
+                    parent_with_left_in_order(Some(node))
+                }
+            }
+        }
+
         // Находим родителя в цепочке предков `node`, до которого можно добраться через его левую часть
         // ребенок.
         fn parent_with_left_in_order<T>(node: Link<T>) -> Link<T> {
@@ -446,24 +497,6 @@ mod ds_binary_tree{
                 None
             }
         }
-
-        // Найдите преемника узла в дереве.
-        pub fn successor_of_node_in_order<T>(node: NonNull<Node<T>>) -> Link<T> {
-            unsafe {
-                if !(*node.as_ref()).right.is_none() {
-                    // Случай 1: узел имеет правого дочернего элемента; тогда преемником является
-                    // самый левый дочерний элемент этого правого дочернего элемента (или самого правого дочернего элемента, если
-                    // у него нет левых потомков).
-                    leftmost_child_in_order((*node.as_ref()).right)
-                } else {
-                    // Случай 2: нет правого дочернего элемента; затем пройдите по родительским ссылкам, чтобы найти
-                    // узел, левым дочерним элементом которого мы являемся. Не удалось найти такого родителя
-                    // до достижения корня означает, что преемника нет.
-                    parent_with_left_in_order(Some(node))
-                }
-            }
-        }
-
     }
 
 }
@@ -489,9 +522,9 @@ mod tests {
 
         println!("display:\n{}",tree.display());
 
-        let nodes = tree.in_order();
+        let nodes = tree.depth_first_in_order();
         assert_eq!(nodes.len(),tree.node_count());
-        println!("in_order:{:?}",nodes);
+        println!("depth_first_in_order:{:?}",nodes);
  
         assert!(true);
     }*/
@@ -511,10 +544,12 @@ mod tests {
         tree.insert(6);  
         println!("display:\n{}",tree.display());
 
-        for item in tree.iter(){
+        for item in tree.iter_in_order(){
             println!("iter:{}",item);
         }
-        println!("in_order:{:?}",tree.in_order());
+        println!("in_order:{:?}",tree.depth_first_in_order());
+
+        assert_eq!(Some(&4), tree.successor_in_order(3));
         assert!(true);
     }
 }
