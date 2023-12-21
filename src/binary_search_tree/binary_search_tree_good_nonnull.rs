@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 // Tree на основе NonNull
 pub use ds_binary_tree::Tree;
 mod ds_binary_tree{
@@ -18,7 +20,7 @@ mod ds_binary_tree{
     type Link<T> = Option<NonNull<Node<T>>>;
 
     #[derive(Debug)]
-    struct Node<T> {
+    pub struct Node<T> {
         left: Link<T>,
         right: Link<T>,
         parent: Link<T>,
@@ -50,7 +52,6 @@ mod ds_binary_tree{
                 }
             } else {
                 self.root = Node::new(elem);
-
             }
             self.count += 1;
             true
@@ -74,32 +75,60 @@ mod ds_binary_tree{
         pub fn depth_first_in_order(&self) -> Vec<&T> {
             let mut v = vec![];
             if let Some(root) = self.root{
-                let mut node: Link<T> = leftmost_child_in_order(Some(root));
-                loop {
-                    if let Some(n) = node{
-                        unsafe {
-                            v.push(&(*n.as_ref()).elem);
-                        }
-                        node = successor_of_node_in_order(n); 
-                                             
-                    }else{
-                        break;
-                    }
+                unsafe {
+                    in_order((*root.as_ref()).left, &mut v);
+                    v.push(&(*root.as_ref()).elem);
+                    in_order((*root.as_ref()).right, &mut v);
+                }
+            }
+            v
+        }
+ 
+        //pub fn depth_first_in_order(&self) -> Vec<&T> {
+        //    let mut v = vec![];
+        //    if let Some(root) = self.root{
+        //        let mut node: Link<T> = leftmost_child_in_order(Some(root));
+        //        loop {
+        //            if let Some(n) = node{
+        //                unsafe {
+        //                    v.push(&(*n.as_ref()).elem);
+        //                }
+        //                node = successor_of_node_in_order(n); 
+        //                                     
+        //            }else{
+        //                break;
+        //            }
+        //        }
+        //    }
+        //    v
+        //}
+
+        /// Возвращает все данные дерева
+        /// Метод прохода по дереву - поиск в глубину обратным способом (Post order).
+        pub fn depth_first_post_order(&self) -> Vec<&T> {
+            let mut v = vec![];
+            if let Some(root) = self.root{
+                unsafe {
+                    post_order((*root.as_ref()).left, &mut v);
+                    post_order((*root.as_ref()).right, &mut v);
+                    v.push(&(*root.as_ref()).elem);
                 }
             }
             v
         }
 
         /// Возвращает все данные дерева
-        /// Метод прохода по дереву - поиск в глубину обратным способом (Post order).
-        pub fn depth_first_post_order(&self) -> Vec<&T> {
-            unimplemented!()
-        }
-
-        /// Возвращает все данные дерева
         /// Метод прохода по дереву - поиск в глубину прямым способом (Pre order).
         pub fn depth_first_pre_order(&self) -> Vec<&T> {
-            unimplemented!()
+            let mut v = vec![];
+            if let Some(root) = self.root{
+                unsafe {
+                    v.push(&(*root.as_ref()).elem);
+                    pre_order((*root.as_ref()).left, &mut v);
+                    pre_order((*root.as_ref()).right, &mut v);
+                }
+            }
+            v
         }
 
         /// Удаляем данный элемент из дерева; возвращает true, если такой узел был
@@ -130,13 +159,13 @@ mod ds_binary_tree{
 
         /// Найти следующий элемент данного элемента в дереве.  
         /// Метод прохода по дереву - поиск в глубину обратным способом (Post order).
-        pub fn successor_post_order(&self, elem: T) -> Option<&T>{
+        pub fn successor_post_order(&self, _elem: T) -> Option<&T>{
             unimplemented!()
         }
 
         /// Найти следующий элемент данного элемента в дереве. 
         /// Метод прохода по дереву - поиск в глубину прямым способом (Pre order). 
-        pub fn successor_pre_order(&self, elem: T) -> Option<&T>{
+        pub fn successor_pre_order(&self, _elem: T) -> Option<&T>{
             unimplemented!()
         }
 
@@ -438,10 +467,47 @@ mod ds_binary_tree{
         }
     } 
 
-    use depth_first_in_order::{leftmost_child_in_order, successor_of_node_in_order};
+    use depth_first_post_order::post_order;
+    mod depth_first_post_order{
+        use super::Link;
+        pub fn post_order<T>(node: Link<T>, buf: &mut Vec<&T>){
+            if let Some(node) = node{
+                unsafe { 
+                    post_order((*node.as_ref()).left, buf);
+                    post_order((*node.as_ref()).right, buf);
+                    buf.push(&(*node.as_ref()).elem);
+                }
+            }
+        } 
+    }
+
+    use depth_first_pre_order::pre_order;
+    mod depth_first_pre_order{
+        use super::Link;
+        pub fn pre_order<T>(node: Link<T>, buf: &mut Vec<&T>){
+            if let Some(node) = node{
+                unsafe { 
+                    buf.push(&(*node.as_ref()).elem);
+                    pre_order((*node.as_ref()).left, buf);
+                    pre_order((*node.as_ref()).right, buf);
+                }
+            }
+        } 
+    }
+
+    use depth_first_in_order::{leftmost_child_in_order, successor_of_node_in_order, in_order};
     mod depth_first_in_order{
         use super::{Link, NonNull, Node};
-
+        pub fn in_order<T>(node: Link<T>, buf: &mut Vec<&T>){
+            if let Some(node) = node{
+                unsafe { 
+                    in_order((*node.as_ref()).left, buf);
+                    buf.push(&(*node.as_ref()).elem);
+                    in_order((*node.as_ref()).right, buf);
+                }
+            }
+        } 
+        
         // Находим самого левого дочернего элемента `node` или самого `node`, если у него нет
         // левого дочернего элемента. `node` не может быть нулевым.
         pub fn leftmost_child_in_order<T>(node: Link<T>) -> Link<T>{
@@ -470,30 +536,27 @@ mod ds_binary_tree{
                     // Случай 2: нет правого дочернего элемента; затем пройдите по родительским ссылкам, чтобы найти
                     // узел, левым дочерним элементом которого мы являемся. Не удалось найти такого родителя
                     // до достижения корня означает, что преемника нет.
-                    parent_with_left_in_order(Some(node))
+                    parent_with_left(node)
                 }
             }
         }
 
         // Находим родителя в цепочке предков `node`, до которого можно добраться через его левую часть
         // ребенок.
-        fn parent_with_left_in_order<T>(node: Link<T>) -> Link<T> {
+        fn parent_with_left<T>(node: NonNull<Node<T>>) -> Link<T> {
             unsafe {
                 // Если у этого узла есть родительский элемент, и у этого родителя есть левый дочерний элемент, и
                 // `node` — это левый дочерний элемент, мы его нашли!
-                if let Some(node) = node{
-                    let parent = (*node.as_ref()).parent;
-                    if let Some(parent) = parent{
-                        if let Some(left) = (*parent.as_ref()).left{
-                            if std::ptr::eq(left.as_ptr(), node.as_ptr()){
-                                return Some(parent);
-                            }
+                let parent = (*node.as_ref()).parent;
+                if let Some(parent) = parent{
+                    if let Some(left) = (*parent.as_ref()).left{
+                        if std::ptr::eq(left.as_ptr(), node.as_ptr()){
+                            return Some(parent);
                         }
-                        return parent_with_left_in_order(Some(parent));
                     }
+                    return parent_with_left(parent);
                 }
-                // У этого узла нет родителя, поэтому мы достигли корня без
-                // находим то, что нам нужно.
+                // У этого узла нет родителя, поэтому мы достигли корня
                 None
             }
         }
@@ -507,7 +570,7 @@ mod ds_binary_tree{
 mod tests {
     use super::*;
 
-    /*#[test]
+    #[test]
     fn test_success() {
         let mut tree: Tree<i32> = Tree::new();
         tree.insert(5);
@@ -519,15 +582,10 @@ mod tests {
         assert!(tree.find(8));
         tree.remove(8);
         assert!(!tree.find(8));
-
-        println!("display:\n{}",tree.display());
-
+ 
         let nodes = tree.depth_first_in_order();
         assert_eq!(nodes.len(),tree.node_count());
-        println!("depth_first_in_order:{:?}",nodes);
- 
-        assert!(true);
-    }*/
+    }
 
     #[test]
     fn test_iter_in_order() {
@@ -547,9 +605,44 @@ mod tests {
         for item in tree.iter_in_order(){
             println!("iter:{}",item);
         }
-        println!("in_order:{:?}",tree.depth_first_in_order());
+        let elements = tree.depth_first_in_order();
+        println!("in_order:{:?}",elements);
+        assert_eq!(elements,vec![&1, &2, &3, &4, &6, &7, &8, &9, &10]);
 
         assert_eq!(Some(&4), tree.successor_in_order(3));
-        assert!(true);
+    }
+
+    #[test]
+    fn test_iter_pre_order() {
+        let mut tree: Tree<i32> = Tree::new();
+        tree.insert(4);
+        tree.insert(3);
+        tree.insert(9);
+        tree.insert(1);
+        tree.insert(2);
+        tree.insert(10);
+        tree.insert(7);
+        tree.insert(8);
+        tree.insert(6);  
+        let elements = tree.depth_first_pre_order();
+        println!("pre_order:{:?}",elements);
+        assert_eq!(elements,vec![&4, &3, &1, &2, &9, &7, &6, &8, &10]);
+    }
+    
+    #[test]
+    fn test_iter_post_order() {
+        let mut tree: Tree<i32> = Tree::new();
+        tree.insert(4);
+        tree.insert(3);
+        tree.insert(9);
+        tree.insert(1);
+        tree.insert(2);
+        tree.insert(10);
+        tree.insert(7);
+        tree.insert(8);
+        tree.insert(6);  
+        let elements = tree.depth_first_post_order();
+        println!("post_order:{:?}",elements);
+        assert_eq!(elements,vec![&2, &1, &3, &6, &8, &7, &10, &9, &4]);
     }
 }
