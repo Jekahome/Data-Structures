@@ -11,3 +11,9 @@ pub use linked_list::{
     doubly_linked_list_generic_weak, doubly_linked_list_good_unsafe,
     doubly_linked_list_prod_unsafe, linked_list_enum,
 };
+
+mod binary_tree;
+pub use binary_tree::{binary_tree_rc, binary_tree_ptr};
+
+mod binary_search_tree;
+pub use binary_search_tree::{binary_search_tree_good_nonnull, binary_search_tree_nodehandle, binary_search_tree_rcrefcell, binary_search_tree_unsafeall};
