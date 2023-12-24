@@ -11,7 +11,7 @@ mod ds_binary_tree{
     use std::ptr::NonNull;
 
     //#[derive(Debug)]
-    pub struct Tree<T: PartialEq + PartialOrd + Display> {
+    pub struct Tree<T: PartialEq + PartialOrd + Display + Clone> {
         root: Link<T>,
         count: usize,
         _boo: PhantomData<T>,
@@ -20,14 +20,14 @@ mod ds_binary_tree{
     type Link<T> = Option<NonNull<Node<T>>>;
 
     #[derive(Debug)]
-    pub struct Node<T> {
+    pub struct Node<T:Display> {
         left: Link<T>,
         right: Link<T>,
         parent: Link<T>,
         elem: T,
     }
  
-    impl<T: PartialEq + PartialOrd + Display> Tree<T> {
+    impl<T: PartialEq + PartialOrd + Display + Clone> Tree<T> {
         pub fn new() -> Self {
             Self {
                 root: None,
@@ -42,9 +42,9 @@ mod ds_binary_tree{
             self.count
         }
 
-        /// Вставляем новый элемент в дерево; возвращает true, если вставка
-        /// произошло, и значение false, если данные данные уже присутствовали в
-        /// дерево.
+        /// Вставляем новый элемент в дерево; 
+        /// возвращает true, если вставка произошла,
+        /// и значение false, если данные данные уже присутствовали в дереве.
         pub fn insert(&mut self, elem: T) -> bool{
             if let Some(root) = self.root {
                 if !insert_node(root, elem) {
@@ -70,15 +70,54 @@ mod ds_binary_tree{
             "".into()
         }
 
-        /// Возвращает все данные дерева
-        /// Метод прохода по дереву - поиск в глубину симметричным способом (In-order).
-        pub fn depth_first_in_order(&self) -> Vec<&T> {
+        pub fn depth_first_get_values(&self, start_node: Link<T>) -> Vec<T> {
             let mut v = vec![];
-            if let Some(root) = self.root{
+            let node = {
+                if start_node.is_some(){ 
+                    start_node
+                }else{
+                    self.root
+                }
+            };
+
+            fn get_nodes<T: PartialEq + PartialOrd + Display + Clone>(node: Link<T>, buf: &mut Vec<T>){
+                if let Some(node) = node{
+                    unsafe { 
+                        buf.push((*node.as_ref()).elem.clone());
+                        get_nodes((*node.as_ref()).left, buf);
+                        get_nodes((*node.as_ref()).right, buf);
+                    }
+                }
+            } 
+
+            if let Some(node) = node{
                 unsafe {
-                    in_order((*root.as_ref()).left, &mut v);
-                    v.push(&(*root.as_ref()).elem);
-                    in_order((*root.as_ref()).right, &mut v);
+                    v.push((*node.as_ref()).elem.clone());
+                    get_nodes((*node.as_ref()).left, &mut v);
+                    get_nodes((*node.as_ref()).right, &mut v);
+                }
+            }
+            v
+        }
+
+        /// Возвращает все данные дерева
+        /// Симметричный поиск в глубину (In-order).
+        #[cfg(feature = "in-order")]
+        pub fn depth_first_in_order_recursive(&self, start_node: Link<T>) -> Vec<&T> {
+            let mut v = vec![];
+            let node = {
+                if start_node.is_some(){ 
+                    start_node
+                }else{
+                    self.root
+                }
+            };
+
+            if let Some(node) = node{
+                unsafe {
+                    in_order_recursive((*node.as_ref()).left, &mut v);
+                    v.push(&(*node.as_ref()).elem);
+                    in_order_recursive((*node.as_ref()).right, &mut v);
                 }
             }
             v
@@ -104,28 +143,54 @@ mod ds_binary_tree{
         //}
 
         /// Возвращает все данные дерева
-        /// Метод прохода по дереву - поиск в глубину обратным способом (Post order).
-        pub fn depth_first_post_order(&self) -> Vec<&T> {
+        /// Обратный поиск в глубину (Post order).
+        /*#[cfg(feature = "post-order")]
+        pub fn depth_first_post_order_recursive(&self) -> Vec<&T> {
             let mut v = vec![];
             if let Some(root) = self.root{
                 unsafe {
-                    post_order((*root.as_ref()).left, &mut v);
-                    post_order((*root.as_ref()).right, &mut v);
+                    post_order_recursive((*root.as_ref()).left, &mut v);
+                    post_order_recursive((*root.as_ref()).right, &mut v);
                     v.push(&(*root.as_ref()).elem);
+                }
+            }
+            v
+        }*/
+
+        #[cfg(feature = "post-order")]
+        pub fn depth_first_post_order_recursive(&self) -> Vec<&T> {
+            let mut v = vec![];
+            if let Some(root) = self.root{
+                let mut node: Link<T> = Some(leaf_post_order(root));
+                let mut is_root = false;
+                loop {
+                    if let Some(n) = node{
+                        unsafe {
+                            v.push(&(*n.as_ref()).elem);
+                            if (*n.as_ref()).parent.is_none(){
+                                break;
+                            }                            
+                        }
+                        node = successor_of_node_post_order(n); 
+                                       
+                    }else{
+                        break;
+                    }
                 }
             }
             v
         }
 
         /// Возвращает все данные дерева
-        /// Метод прохода по дереву - поиск в глубину прямым способом (Pre order).
-        pub fn depth_first_pre_order(&self) -> Vec<&T> {
+        /// Прямой поиск в глубину (Pre order).
+        #[cfg(feature = "pre-order")]
+        pub fn depth_first_pre_order_recursive(&self) -> Vec<&T> {
             let mut v = vec![];
-            if let Some(root) = self.root{
+            if let Some(node) = self.root{
                 unsafe {
-                    v.push(&(*root.as_ref()).elem);
-                    pre_order((*root.as_ref()).left, &mut v);
-                    pre_order((*root.as_ref()).right, &mut v);
+                    v.push(&(*node.as_ref()).elem);
+                    pre_order_recursive((*node.as_ref()).left, &mut v);
+                    pre_order_recursive((*node.as_ref()).right, &mut v);
                 }
             }
             v
@@ -145,6 +210,7 @@ mod ds_binary_tree{
 
         /// Найти следующий элемент данного элемента в дереве.  
         /// Метод прохода по дереву - поиск в глубину симметричным способом (In-order).
+        #[cfg(feature = "in-order")]
         pub fn successor_in_order(&self, elem: T) -> Option<&T>{
             unsafe {
                 let node = find_node(self.root, elem);
@@ -156,141 +222,234 @@ mod ds_binary_tree{
                 None
             }
         }
-
+ 
         /// Найти следующий элемент данного элемента в дереве.  
         /// Метод прохода по дереву - поиск в глубину обратным способом (Post order).
-        pub fn successor_post_order(&self, _elem: T) -> Option<&T>{
-            unimplemented!()
+        #[cfg(feature = "post-order")]
+        pub fn successor_post_order(&self, elem: T) -> Option<&T>{
+            unsafe {
+                if let Some(n) = find_node(self.root, elem) {
+                    if let Some(nodesucc) = successor_of_node_post_order(n){
+                        return Some(&(*nodesucc.as_ref()).elem);
+                    }
+                }
+                None
+            } 
         }
 
         /// Найти следующий элемент данного элемента в дереве. 
         /// Метод прохода по дереву - поиск в глубину прямым способом (Pre order). 
-        pub fn successor_pre_order(&self, _elem: T) -> Option<&T>{
-            unimplemented!()
+        #[cfg(feature = "pre-order")]
+        pub fn successor_pre_order(&self, elem: T) -> Option<&T>{
+            unsafe {
+                let node = find_node(self.root, elem);
+                if let Some(n) = node {
+                    if let Some(nodesucc) = successor_of_node_pre_order(n){
+                        return Some(&(*nodesucc.as_ref()).elem);
+                    }
+                }
+                None
+            } 
         }
 
-        // Удаляем данный узел из дерева.
-        fn remove_node(&mut self, mut node: NonNull<Node<T>>){
+        fn remove_branch(&mut self, mut node: NonNull<Node<T>>){
             unsafe {
-                let lchild = (*node.as_ref()).left;
-                let rchild = (*node.as_ref()).right;
-                if lchild.is_none() && rchild.is_none() {
+                let left = (*node.as_ref()).left;
+                let right = (*node.as_ref()).right;
+                if left.is_none() && right.is_none() {  
                     // У узла нет дочерних элементов, поэтому его можно безопасно удалить.
-                    self.replace_node(node, None);
-                } else if !lchild.is_none() && !rchild.is_none() {
-                    // У узла есть оба дочерних узла.
-                    // Находим преемника этого узла, заменяем данные нашего узла
-                    // его данные, а затем рекурсивно удаляем преемника.
-                    let mut succ = successor_of_node_in_order(node);
-                    assert!(!succ.is_none());
-                    if let Some(ref mut n) = succ{
-                        //(*node.as_mut()).elem = (*n.as_ref()).elem; 
-                        std::mem::swap(&mut (*node.as_mut()).elem, &mut (*n.as_mut()).elem);
-                    }
-                    self.remove_node(succ.unwrap());
-                     
-                } else if !lchild.is_none() {
-                    // У узла остался только left дочерний элемент, поэтому замените его единственным дочерним элементом.
-                    self.replace_node(node, lchild);
-                } else if !rchild.is_none() {
-                    // У узла остался только right дочерний элемент, поэтому замените его единственным дочерним элементом.
-                    self.replace_node(node, rchild);
-                } else {
-                    panic!("unreachable");
+                    self.remove_leaf(node);
+                    self.count -= 1;
+                }else if left.is_some() && right.is_none() {
+                    self.remove_branch(left.unwrap());
+                }else if left.is_none() && right.is_some() {
+                    self.remove_branch(right.unwrap());
+                }else{
+                    self.remove_branch(left.unwrap());
+                    self.remove_branch(right.unwrap());
                 }
             }
         }
 
-        // Заменяет `node` на `r` в дереве, устанавливая родительский элемент `node`
-        // левая/правая ссылка на `node` со ссылкой на `r` и установкой родителя `r`
-        // ссылка на родителя узла. `узел` не может быть нулевым.
-        fn replace_node(&mut self, node: NonNull<Node<T>>, r: Link<T>){
-            unsafe {
-                let parent = (*node.as_ref()).parent;
-                if parent.is_none() {
-                    // Removing the root node.
-                    self.root = r;
-                    if let Some(mut n) = r{
-                        (*n.as_mut()).parent = None;
-                    }
-                } else {
-                    if let Some(mut n) = r{
-                        (*n.as_mut()).parent = parent;
-                    }
-                    let mut parent = parent.unwrap();
+        fn remove_node(&mut self, mut node: NonNull<Node<T>>){
+            unsafe {  
+                let left = (*node.as_ref()).left;
+                let right = (*node.as_ref()).right;
+                if left.is_none() && right.is_none() {  
+                    // У узла нет дочерних элементов, поэтому его можно безопасно удалить.
+                    
+                    self.remove_leaf(node);
+                } else if left.is_some() && right.is_none() {
+                      
+                    self.replace_node(node, left);
+                } else if left.is_none() && right.is_some() { 
+                    
+                    self.replace_node(node, right);
+                } else if left.is_some() && right.is_some() {
 
-                    if (*parent.as_ref()).left == Some(node) {
-                        (*parent.as_mut()).left = r;
-                    } else if (*parent.as_ref()).right == Some(node) {
-                        (*parent.as_mut()).right = r;
+                    self.replace_node(node, left);
+
+                    // перекинуть branch right
+                    let nodes = self.depth_first_get_values(right);
+                    for el in nodes{
+                        if self.insert(el){ 
+                            self.count -= 1;// TODO: компенсация, количесво не меняется
+                        }
+                    }                        
+                } else {
+                    unreachable!()
+                }
+            }
+        }
+
+        fn remove_leaf(&mut self, node: NonNull<Node<T>>){
+            unsafe {
+                if (*node.as_ref()).left.is_some() || (*node.as_ref()).right.is_some(){
+                    panic!("node is not leaf");
+                }else{
+                    if let Some(mut parent) = (*node.as_ref()).parent{
+                        if let Some(ref mut left) = (*parent.as_mut()).left{
+                            if std::ptr::eq(left.as_ptr(), node.as_ptr()){
+                                (*parent.as_mut()).left = None;
+                            }
+                        } 
+                        if let Some(ref mut right) = (*parent.as_mut()).right{
+                            if std::ptr::eq(right.as_ptr(), node.as_ptr()){
+                                (*parent.as_mut()).right = None;
+                            }
+                        } 
+                    }else{
+                        self.root = None;
                     }
+                    let _ = Box::from_raw(node.as_ptr());
+                }
+            }
+        }
+
+        fn replace_node(&mut self, node: NonNull<Node<T>>, mut replace: Link<T>){
+            unsafe {
+                if let Some(mut parent) = (*node.as_ref()).parent{
+                    if let Some(ref mut replace) = replace{
+                        // поменять ссылку на родителя
+                        (*replace.as_mut()).parent = Some(parent);
+                         
+                        // поменять у родителя ссылку  
+                        if let Some(ref mut left) = (*parent.as_mut()).left{
+                            if std::ptr::eq(left.as_ptr(), node.as_ptr()){
+                                *left = *replace;
+                            }
+                        } 
+                        if let Some(ref mut right) = (*parent.as_mut()).right{
+                            if std::ptr::eq(right.as_ptr(), node.as_ptr()){
+                                *right = *replace;
+                            }
+                        } 
+                    }
+                }else{
+                    // Removing the root node.
+                    self.root = replace;
+                    if let Some(mut n) = replace{
+                        (*n.as_mut()).parent = None;
+                    }                    
                 }
                 // узел сейчас не используется, поэтому мы можем освободить его, который будет автоматически удален.
                 let _ = Box::from_raw(node.as_ptr());
             }
         }
 
+        #[cfg(feature = "in-order")]
         pub fn iter_in_order(&self) -> IterInOrder<T> {
-            IterInOrder::new(self.root, self.count)
+            IterInOrder::new(leftmost_child_in_order(self.root), self.count)
         }
-      
+
+        #[cfg(feature = "pre-order")]
+        pub fn iter_pre_order(&self) -> IterPreOrder<T> {
+            IterPreOrder::new(self.root, self.count)
+        }
+
+        #[cfg(feature = "post-order")]
+        pub fn iter_post_order(&self) -> IterPostOrder<T> {
+            IterPostOrder::new(self.root, self.count)
+        }
     }
 
-    impl<T: PartialEq + PartialOrd + Display> Drop for Tree<T> {
+    impl<T: PartialEq + PartialOrd + Display + Clone> Drop for Tree<T> {
         fn drop(&mut self) {
             while !self.root.is_none() {
                 if let Some(root) = self.root{
-                    self.remove_node(root);
+                    self.remove_branch(root);
                 }
             }
         }
     }
+
+    impl<T:Display> Drop for Node<T> {
+        fn drop(&mut self) {
+            println!("Drop Node={}",self.elem);
+        }
+    }
     
-    impl<'a,T: PartialEq + PartialOrd + Display> std::iter::IntoIterator for &'a Tree<T> {
+    #[cfg(feature = "in-order")]
+    impl<'a,T: PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
         type IntoIter = IterInOrder<'a, T>;
         type Item = &'a T;
 
         fn into_iter(self) -> Self::IntoIter{
-            IterInOrder::new(self.root, self.count)
+            IterInOrder::new(leftmost_child_in_order(self.root), self.count)
+        }
+    }
+
+    #[cfg(feature = "pre-order")]
+    impl<'a,T: PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
+        type IntoIter = IterPreOrder<'a, T>;
+        type Item = &'a T;
+
+        fn into_iter(self) -> Self::IntoIter{
+            IterPreOrder::new(self.root, self.count)
+        }
+    }
+
+    #[cfg(feature = "post-order")]
+    impl<'a,T: PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
+        type IntoIter = IterPostOrder<'a, T>;
+        type Item = &'a T;
+
+        fn into_iter(self) -> Self::IntoIter{
+            IterPostOrder::new(self.root, self.count)
         }
     }
 
     /// Итерация методом прохода по дереву - поиск в глубину симметричным способом (In-order)
+    #[cfg(feature = "in-order")]
     use iter_depth_first_in_order::IterInOrder;
+    #[cfg(feature = "in-order")]
     mod iter_depth_first_in_order{
         use std::fmt::Display; 
         use super::{Link,PhantomData};
         use super::depth_first_in_order::{leftmost_child_in_order, successor_of_node_in_order};
-
-        pub struct IterInOrder<'a, T: PartialEq + PartialOrd + Display> {
+        pub struct IterInOrder<'a, T: PartialEq + PartialOrd + Display + Clone> {
             current_node: Link<T>,
             count: usize,
             elem: Option<&'a T>,
-            is_start: bool,
+            //is_start: bool,
             _boo: PhantomData<&'a T>,
         }
 
-        impl<'a, T: PartialEq + PartialOrd + Display> IterInOrder<'a, T> {
-            pub fn new(root: Link<T>, count: usize) -> Self{
+        impl<'a, T: PartialEq + PartialOrd + Display + Clone> IterInOrder<'a, T> {
+            pub fn new(node: Link<T>, count: usize) -> Self{
                     Self{
-                        current_node: root,
+                        current_node: node,
                         count,
                         elem: None,
-                        is_start: false,
                         _boo: PhantomData
                     }
             }
         }
 
-        impl<'a, T: PartialEq + PartialOrd + Display> Iterator for IterInOrder<'a, T> {
+        impl<'a, T: PartialEq + PartialOrd + Display + Clone> Iterator for IterInOrder<'a, T> {
             type Item = &'a T;
 
             fn next(&mut self) -> Option<Self::Item> {
-                if !self.is_start{
-                    self.is_start = true;
-                    let node: Link<T> = leftmost_child_in_order(self.current_node);
-                    self.current_node = node;
-                }
                 if self.count > 0{
                     self.count-=1;
                     if let Some(node) = self.current_node{
@@ -313,9 +472,119 @@ mod ds_binary_tree{
         }
     }
 
+    #[cfg(feature = "pre-order")]
+    use iter_depth_first_pre_order::IterPreOrder;
+    #[cfg(feature = "pre-order")]
+    mod iter_depth_first_pre_order{
+        use std::fmt::Display; 
+        use super::{Link,PhantomData};
+        use super::depth_first_pre_order::successor_of_node_pre_order;
+
+        pub struct IterPreOrder<'a, T: PartialEq + PartialOrd + Display> {
+            current_node: Link<T>,
+            count: usize,
+            elem: Option<&'a T>,
+            _boo: PhantomData<&'a T>,
+        }
+
+        impl<'a, T: PartialEq + PartialOrd + Display> IterPreOrder<'a, T> {
+            pub fn new(root: Link<T>, count: usize) -> Self{
+                Self{
+                    current_node: root,
+                    count,
+                    elem: None,
+                    _boo: PhantomData
+                }
+            }
+        }
+
+        impl<'a, T: PartialEq + PartialOrd + Display> Iterator for IterPreOrder<'a, T> {
+            type Item = &'a T;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                if self.count > 0{
+                    self.count-=1;
+                    if let Some(node) = self.current_node{
+                        unsafe {
+                            self.elem = Some(&(*node.as_ref()).elem);
+                        }
+                        self.current_node = successor_of_node_pre_order(node);                      
+                    }else{
+                        self.elem = None;
+                    }              
+                }else{
+                    self.elem = None;
+                }
+                self.elem  
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                (self.count, Some(self.count))
+            }
+        }
+    }
+
+    #[cfg(feature = "post-order")]
+    use iter_depth_first_post_order::IterPostOrder;
+    #[cfg(feature = "post-order")]
+    mod iter_depth_first_post_order{
+        use std::fmt::Display; 
+        use super::{Link,PhantomData};
+        use super::depth_first_post_order::successor_of_node_post_order;
+    
+        pub struct IterPostOrder<'a, T: PartialEq + PartialOrd + Display + Clone> {
+            current_node: Link<T>,
+            count: usize,
+            elem: Option<&'a T>,
+            is_root: bool,
+            _boo: PhantomData<&'a T>,
+        }
+
+        impl<'a, T: PartialEq + PartialOrd + Display + Clone> IterPostOrder<'a, T> {
+            pub fn new(root: Link<T>, count: usize) -> Self{
+                Self{
+                    current_node: root,
+                    count,
+                    elem: None,
+                    is_root: false,
+                    _boo: PhantomData
+                }
+            }
+        }
+
+        impl<'a, T: PartialEq + PartialOrd + Display + Clone> Iterator for IterPostOrder<'a, T> {
+            type Item = &'a T;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                if self.count > 0{
+                    self.count-=1;
+                    if let Some(node) = self.current_node{
+                        unsafe {
+                            self.current_node = successor_of_node_post_order(node); 
+                            if let Some(node) = self.current_node{
+                                self.elem = Some(&(*node.as_ref()).elem);
+                                if (*node.as_ref()).parent.is_none(){
+                                    self.current_node = None;
+                                }
+                            }
+                        }                 
+                    }else{
+                        self.elem = None;
+                    }              
+                }else{
+                    self.elem = None;
+                }
+                self.elem 
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                (self.count, Some(self.count))
+            }
+        }
+    }
 
     // опционально ------------------------------------------------------
-    impl<T: PartialEq + PartialOrd + Display> Default for Tree<T> {
+    impl<T: PartialEq + PartialOrd + Display + Clone> Default for Tree<T> {
         fn default() -> Self {
             Self::new()
         }
@@ -331,7 +600,7 @@ mod ds_binary_tree{
         }
     }
 
-    impl<T: PartialEq + PartialOrd + Display> Extend<T> for Tree<T> {
+    impl<T: PartialEq + PartialOrd + Display + Clone> Extend<T> for Tree<T> {
         fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
             for item in iter {
                 self.insert(item);
@@ -339,7 +608,7 @@ mod ds_binary_tree{
         }
     }
 
-    impl<T: PartialEq + PartialOrd + Display> FromIterator<T> for Tree<T> {
+    impl<T: PartialEq + PartialOrd + Display + Clone> FromIterator<T> for Tree<T> {
         fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
             let mut list = Self::new();
             list.extend(iter);
@@ -347,33 +616,37 @@ mod ds_binary_tree{
         }
     }
 
-    impl<T: Debug + PartialEq + PartialOrd + Display> Debug for Tree<T> {
+    impl<T: Debug + PartialEq + PartialOrd + Display + Clone> Debug for Tree<T> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.debug_list().entries(self).finish()
         }
     }
 
-    impl<T: PartialEq + PartialOrd + Display> PartialEq for Tree<T> {
+    #[cfg(feature = "in-order")]
+    impl<T: PartialEq + PartialOrd + Display + Clone> PartialEq for Tree<T> {
         fn eq(&self, other: &Self) -> bool {
             self.node_count() == other.node_count() && self.iter_in_order().eq(other)
         }
     }
 
-    impl<T: Eq + PartialEq + PartialOrd + Display> Eq for Tree<T> {}
+    #[cfg(feature = "in-order")]
+    impl<T: Eq + PartialEq + PartialOrd + Display + Clone> Eq for Tree<T> {}
 
-    impl<T: PartialEq + PartialOrd + Display> PartialOrd for Tree<T> {
+    #[cfg(feature = "in-order")]
+    impl<T: PartialEq + PartialOrd + Display + Clone> PartialOrd for Tree<T> {
         fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
             self.iter_in_order().partial_cmp(other)
         }
     }
 
-    impl<T: Ord + PartialEq + PartialOrd + Display> Ord for Tree<T> {
+    #[cfg(feature = "in-order")]
+    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> Ord for Tree<T> {
         fn cmp(&self, other: &Self) -> Ordering {
             self.iter_in_order().cmp(other)
         }
     }
 
-    impl<T: Hash + PartialEq + PartialOrd + Display> Hash for Tree<T> {
+    impl<T: Hash + PartialEq + PartialOrd + Display + Clone> Hash for Tree<T> {
         fn hash<H: Hasher>(&self, state: &mut H) {
             self.node_count().hash(state);
             for item in self {
@@ -383,18 +656,19 @@ mod ds_binary_tree{
     }
     // ------------------------------------------------------------------
  
-    impl<T> Node<T> {
+    impl<T:Display> Node<T> {
         fn new(elem: T) -> Link<T>  {
             unsafe {
                 let new = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
                     left: None,
-                    right: None,// std::ptr::null_mut()
+                    right: None,
                     parent: None,
                     elem,
                 })));
                 Some(new)
             }
         }
+
         fn new_with_parent(elem: T, parent: NonNull<Node<T>>) -> Link<T>  {
             unsafe {
                 let new = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
@@ -409,7 +683,7 @@ mod ds_binary_tree{
     }
 
     // Вставляет `elem` в новый узел поддерева `node`.
-    fn insert_node<T:PartialEq+PartialOrd>(node: NonNull<Node<T>>, elem: T) -> bool {
+    fn insert_node<T:PartialEq+PartialOrd+Display>(node: NonNull<Node<T>>, elem: T) -> bool {
         unsafe {
             if (*node.as_ptr()).elem == elem {
                 false
@@ -420,7 +694,7 @@ mod ds_binary_tree{
                     (*node.as_ptr()).left = Node::new_with_parent(elem, node);
                     true
                 }
-            }else{// elem > (*node.as_ptr()).elem
+            }else{
                 if let Some(right) = (*node.as_ptr()).right{
                     insert_node(right, elem)
                 }else{
@@ -451,7 +725,7 @@ mod ds_binary_tree{
     }
 
     // Находит данные в поддереве `fromnode`. 
-    fn find_node<T: PartialEq + PartialOrd>(fromnode: Option<NonNull<Node<T>>>, elem: T) -> Option<NonNull<Node<T>>>{
+    fn find_node<T: PartialEq + PartialOrd+Display>(fromnode: Option<NonNull<Node<T>>>, elem: T) -> Option<NonNull<Node<T>>>{
         unsafe {
             if let Some(fromnode) = fromnode{
                 if (*fromnode.as_ptr()).elem == elem {
@@ -467,50 +741,151 @@ mod ds_binary_tree{
         }
     } 
 
-    use depth_first_post_order::post_order;
+    #[cfg(feature = "post-order")]
+    use depth_first_post_order::{post_order_recursive, successor_of_node_post_order, leaf_post_order};
+    #[cfg(feature = "post-order")]
     mod depth_first_post_order{
-        use super::Link;
-        pub fn post_order<T>(node: Link<T>, buf: &mut Vec<&T>){
+        use super::{Link, NonNull, Node};
+        use std::fmt::Display;
+        pub fn post_order_recursive<T: Display>(node: Link<T>, buf: &mut Vec<&T>){
             if let Some(node) = node{
                 unsafe { 
-                    post_order((*node.as_ref()).left, buf);
-                    post_order((*node.as_ref()).right, buf);
+                    post_order_recursive((*node.as_ref()).left, buf);
+                    post_order_recursive((*node.as_ref()).right, buf);
                     buf.push(&(*node.as_ref()).elem);
                 }
             }
         } 
+
+        // Найдите преемника узла в дереве.
+        pub fn successor_of_node_post_order<T: Display>(current_node: NonNull<Node<T>>) -> Link<T> {
+            unsafe {
+                if let Some(parent) = (*current_node.as_ref()).parent{
+                    if let Some(right) = (*parent.as_ref()).right{
+                        if std::ptr::eq(current_node.as_ptr(), right.as_ptr()){
+                            Some(parent)
+                        }else{
+                            Some(leaf_post_order(right))
+                        }
+                    }else{
+                        Some(parent)
+                    }
+                }else{
+                    Some(leaf_post_order(current_node))
+                } 
+            }
+        }
+
+        // Найдите лист.
+        pub fn leaf_post_order<T: Display>(node: NonNull<Node<T>>) -> NonNull<Node<T>> {
+            unsafe { 
+                if let Some(left) = (*node.as_ref()).left{
+                    leaf_post_order(left)
+                }else if let Some(right) = (*node.as_ref()).right{
+                    leaf_post_order(right)
+                }else{
+                    node
+                }
+            } 
+        }
     }
 
-    use depth_first_pre_order::pre_order;
+    #[cfg(feature = "pre-order")]
+    use depth_first_pre_order::{pre_order_recursive, successor_of_node_pre_order};
+    #[cfg(feature = "pre-order")]
     mod depth_first_pre_order{
-        use super::Link;
-        pub fn pre_order<T>(node: Link<T>, buf: &mut Vec<&T>){
+        use super::{Link, NonNull, Node};
+        use std::fmt::Display;
+
+        pub fn pre_order_recursive<T: Display>(node: Link<T>, buf: &mut Vec<&T>){
             if let Some(node) = node{
                 unsafe { 
                     buf.push(&(*node.as_ref()).elem);
-                    pre_order((*node.as_ref()).left, buf);
-                    pre_order((*node.as_ref()).right, buf);
+                    pre_order_recursive((*node.as_ref()).left, buf);
+                    pre_order_recursive((*node.as_ref()).right, buf);
                 }
             }
         } 
+
+        // Найдите преемника узла в дереве.
+        pub fn successor_of_node_pre_order<T: Display>(node: NonNull<Node<T>>) -> Link<T> {
+            unsafe { 
+                if let Some(node) = (*node.as_ref()).left{
+                    Some(node)
+                }else if let Some(node) = (*node.as_ref()).right{
+                    Some(node)
+                }else{
+                    right_with_parent(node)
+                }
+            }
+        }
+
+        fn right_with_parent<T: Display>(node: NonNull<Node<T>>) -> Link<T> {
+            unsafe {
+                if let Some(parent) = (*node.as_ref()).parent{
+                    next_right(Some(parent), node)
+                }else{
+                    None
+                }
+            }
+        }
+
+        fn next_right<T: Display>(node: Link<T>, child: NonNull<Node<T>>) -> Link<T>{
+            unsafe {
+                if let Some(n) = node{
+                    if let Some(right) = (*n.as_ref()).right{
+                        if std::ptr::eq(right.as_ptr(), child.as_ptr()){
+                            next_right((*n.as_ref()).parent, n)
+                        }else{
+                            Some(right)
+                        }
+                    }else{
+                        next_right((*n.as_ref()).parent, n)
+                    }
+                }else{
+                    None
+                } 
+            }  
+        }
     }
 
-    use depth_first_in_order::{leftmost_child_in_order, successor_of_node_in_order, in_order};
+    #[cfg(feature = "in-order")]
+    use depth_first_in_order::{in_order_recursive, leftmost_child_in_order, successor_of_node_in_order};
+    #[cfg(feature = "in-order")]
     mod depth_first_in_order{
         use super::{Link, NonNull, Node};
-        pub fn in_order<T>(node: Link<T>, buf: &mut Vec<&T>){
+        use std::fmt::Display;
+        pub fn in_order_recursive<T:Display>(node: Link<T>, buf: &mut Vec<&T>){
             if let Some(node) = node{
                 unsafe { 
-                    in_order((*node.as_ref()).left, buf);
+                    in_order_recursive((*node.as_ref()).left, buf);
                     buf.push(&(*node.as_ref()).elem);
-                    in_order((*node.as_ref()).right, buf);
+                    in_order_recursive((*node.as_ref()).right, buf);
                 }
             }
         } 
-        
+
+        //--------------------------------------------------------------------------
+        // Найдите преемника узла в дереве.
+        pub fn successor_of_node_in_order<T:Display>(node: NonNull<Node<T>>) -> Link<T> {
+            unsafe {
+                if (*node.as_ref()).right.is_some() {
+                    // Случай 1: узел имеет правого дочернего элемента; 
+                    // тогда преемником является самый левый дочерний элемент этого правого дочернего элемента 
+                    // (или самого правого дочернего элемента, если у него нет левых потомков).
+                    leftmost_child_in_order((*node.as_ref()).right)
+                } else {
+                    // Случай 2: нет правого дочернего элемента; 
+                    // затем пройдите по родительским ссылкам, чтобы найти узел, левым дочерним элементом которого мы являемся.
+                    // Не удалось найти такого родителя до достижения корня означает, что преемника нет.
+                    parent_with_left(node)
+                }
+            }
+        }
+
         // Находим самого левого дочернего элемента `node` или самого `node`, если у него нет
         // левого дочернего элемента. `node` не может быть нулевым.
-        pub fn leftmost_child_in_order<T>(node: Link<T>) -> Link<T>{
+        pub fn leftmost_child_in_order<T:Display>(node: Link<T>) -> Link<T>{
             unsafe {
                 if let Some(node) = node{
                     if (*node.as_ref()).left.is_none() {
@@ -523,27 +898,10 @@ mod ds_binary_tree{
                 }
             }
         }
-
-        // Найдите преемника узла в дереве.
-        pub fn successor_of_node_in_order<T>(node: NonNull<Node<T>>) -> Link<T> {
-            unsafe {
-                if !(*node.as_ref()).right.is_none() {
-                    // Случай 1: узел имеет правого дочернего элемента; тогда преемником является
-                    // самый левый дочерний элемент этого правого дочернего элемента (или самого правого дочернего элемента, если
-                    // у него нет левых потомков).
-                    leftmost_child_in_order((*node.as_ref()).right)
-                } else {
-                    // Случай 2: нет правого дочернего элемента; затем пройдите по родительским ссылкам, чтобы найти
-                    // узел, левым дочерним элементом которого мы являемся. Не удалось найти такого родителя
-                    // до достижения корня означает, что преемника нет.
-                    parent_with_left(node)
-                }
-            }
-        }
-
+ 
         // Находим родителя в цепочке предков `node`, до которого можно добраться через его левую часть
         // ребенок.
-        fn parent_with_left<T>(node: NonNull<Node<T>>) -> Link<T> {
+        fn parent_with_left<T:Display>(node: NonNull<Node<T>>) -> Link<T> {
             unsafe {
                 // Если у этого узла есть родительский элемент, и у этого родителя есть левый дочерний элемент, и
                 // `node` — это левый дочерний элемент, мы его нашли!
@@ -564,29 +922,57 @@ mod ds_binary_tree{
 
 }
 
-
-/// $ cargo test binary_search_tree_good_nonnull -- --nocapture
+/// $ cargo test binary_search_tree_good_nonnull --features in-order -- --nocapture
+/// $ cargo test binary_search_tree_good_nonnull --no-default-features --features pre-order -- --nocapture
+/// $ cargo test binary_search_tree_good_nonnull --no-default-features --features post-order -- --nocapture
 #[cfg(test)]
 mod tests {
     use super::*;
-
+   
+    #[cfg(feature = "in-order")]
     #[test]
-    fn test_success() {
+    fn test_in_order_success() {
         let mut tree: Tree<i32> = Tree::new();
-        tree.insert(5);
         tree.insert(4);
-        tree.insert(8);
-        tree.insert(6);
+        tree.insert(3);
         tree.insert(9);
+        tree.insert(1);
+        tree.insert(2);
+        tree.insert(10);
+        tree.insert(7);
+        tree.insert(8);
+        tree.insert(6);  
+        tree.insert(11);  
 
-        assert!(tree.find(8));
-        tree.remove(8);
-        assert!(!tree.find(8));
+        assert!(tree.find(9),"find true");
+        tree.remove(9);
+        assert!(!tree.find(9),"find false");
  
-        let nodes = tree.depth_first_in_order();
+        let nodes = tree.depth_first_in_order_recursive(None);
+        assert_eq!(nodes,vec![&1, &2, &3, &4, &6, &7, &8, &10, &11]);
         assert_eq!(nodes.len(),tree.node_count());
+
+        let mut buf:Vec<&i32> = vec![];
+        for item in tree.iter_in_order(){
+            buf.push(item);
+        }
+        assert_eq!(buf,vec![&1, &2, &3, &4, &6, &7, &8, &10, &11]);
+
+        assert!(tree.find(6),"find true");
+        tree.remove(6);
+        assert!(!tree.find(6),"find false");
+        let nodes = tree.depth_first_in_order_recursive(None);
+        assert_eq!(nodes,vec![&1, &2, &3, &4, &7, &8, &10, &11]);
+        assert_eq!(nodes.len(),tree.node_count());
+
+        let mut buf:Vec<&i32> = vec![];
+        for item in tree.iter_in_order(){
+            buf.push(item);
+        }
+        assert_eq!(buf,vec![&1, &2, &3, &4, &7, &8, &10, &11]);
     }
 
+    #[cfg(feature = "in-order")]
     #[test]
     fn test_iter_in_order() {
         // Depth First Search Symmetrical method
@@ -600,18 +986,29 @@ mod tests {
         tree.insert(7);
         tree.insert(8);
         tree.insert(6);  
-        println!("display:\n{}",tree.display());
+        //println!("display:\n{}",tree.display());
 
+        let mut buf:Vec<&i32> = vec![];
         for item in tree.iter_in_order(){
-            println!("iter:{}",item);
+            buf.push(item);
         }
-        let elements = tree.depth_first_in_order();
-        println!("in_order:{:?}",elements);
+        assert_eq!(buf,vec![&1, &2, &3, &4, &6, &7, &8, &9, &10]);
+
+        let elements = tree.depth_first_in_order_recursive(None);
         assert_eq!(elements,vec![&1, &2, &3, &4, &6, &7, &8, &9, &10]);
 
-        assert_eq!(Some(&4), tree.successor_in_order(3));
+        assert_eq!(Some(&6), tree.successor_in_order(4),"4->6");
+        assert_eq!(Some(&2), tree.successor_in_order(1),"1->2");
+        assert_eq!(Some(&3), tree.successor_in_order(2),"2->3");
+        assert_eq!(Some(&4), tree.successor_in_order(3),"3->4");
+        assert_eq!(Some(&6), tree.successor_in_order(4),"4->6");
+        assert_eq!(Some(&7), tree.successor_in_order(6),"6->7");
+        assert_eq!(Some(&8), tree.successor_in_order(7),"7->8");
+        assert_eq!(Some(&9), tree.successor_in_order(8),"8->9");
+        assert_eq!(Some(&10), tree.successor_in_order(9),"9->10");
     }
 
+    #[cfg(feature = "pre-order")]
     #[test]
     fn test_iter_pre_order() {
         let mut tree: Tree<i32> = Tree::new();
@@ -624,11 +1021,72 @@ mod tests {
         tree.insert(7);
         tree.insert(8);
         tree.insert(6);  
-        let elements = tree.depth_first_pre_order();
-        println!("pre_order:{:?}",elements);
+        let elements = tree.depth_first_pre_order_recursive();
         assert_eq!(elements,vec![&4, &3, &1, &2, &9, &7, &6, &8, &10]);
+        
+        assert_eq!(Some(&3), tree.successor_pre_order(4),"4->3");
+        assert_eq!(Some(&9), tree.successor_pre_order(2),"2->9");
+        assert_eq!(Some(&8), tree.successor_pre_order(6),"6->8");
+        assert_eq!(Some(&10), tree.successor_pre_order(8),"8->10");
+
+        let mut buf:Vec<&i32> = vec![];
+        for item in tree.iter_pre_order(){
+            buf.push(item);
+        }
+        assert_eq!(buf,vec![&4, &3, &1, &2, &9, &7, &6, &8, &10]);
+
+        assert!(tree.find(8),"msg err: find false");
+        assert!(tree.remove(8),"msg err: not removed");
+        assert!(!tree.find(8),"msg err: find true");
+ 
+        let nodes = tree.depth_first_pre_order_recursive();
+        assert_eq!(nodes.len(),tree.node_count());
+        assert_eq!(nodes,vec![&4, &3, &1, &2, &9, &7, &6, &10]);
+
+        assert!(tree.find(9),"msg err: find false");
+        assert!(tree.remove(9),"msg err: not removed");
+        assert!(!tree.find(9),"msg err: find true");
+        let nodes = tree.depth_first_pre_order_recursive();
+        assert_eq!(nodes.len(),tree.node_count());
+        assert_eq!(nodes,vec![&4, &3, &1, &2, &7, &6, &10]);
+
+        let mut buf:Vec<&i32> = vec![];
+        for item in tree.iter_pre_order(){
+            buf.push(item);
+        }
+        assert_eq!(buf,vec![&4, &3, &1, &2, &7, &6, &10]);
     }
     
+    #[cfg(feature = "pre-order")]
+    #[test]
+    fn test_pre_order_success() {
+        let mut tree: Tree<i32> = Tree::new();
+        tree.insert(4);
+        tree.insert(3);
+        tree.insert(9);
+        tree.insert(1);
+        tree.insert(2);
+        tree.insert(10);
+        tree.insert(7);
+        tree.insert(8);
+        tree.insert(6);  
+
+        assert!(tree.find(8),"find true");
+        tree.remove(8);
+        assert!(!tree.find(8),"find false");
+ 
+        let mut buf:Vec<&i32> = vec![];
+        for item in tree.iter_pre_order(){
+            buf.push(item);
+        }
+        assert_eq!(buf,vec![&4, &3, &1, &2, &9, &7, &6, &10]);
+
+        let nodes = tree.depth_first_pre_order_recursive();
+        assert_eq!(nodes,vec![&4, &3, &1, &2, &9, &7, &6, &10]);
+        assert_eq!(nodes.len(),tree.node_count());
+    }
+
+    #[cfg(feature = "post-order")]
     #[test]
     fn test_iter_post_order() {
         let mut tree: Tree<i32> = Tree::new();
@@ -641,8 +1099,95 @@ mod tests {
         tree.insert(7);
         tree.insert(8);
         tree.insert(6);  
-        let elements = tree.depth_first_post_order();
-        println!("post_order:{:?}",elements);
+    
+        let elements = tree.depth_first_post_order_recursive();
         assert_eq!(elements,vec![&2, &1, &3, &6, &8, &7, &10, &9, &4]);
+
+        assert_eq!(Some(&2), tree.successor_post_order(4),"4->2");
+        assert_eq!(Some(&1), tree.successor_post_order(2),"2->1");
+        assert_eq!(Some(&3), tree.successor_post_order(1),"1->3");
+        assert_eq!(Some(&6), tree.successor_post_order(3),"3->6");
+        assert_eq!(Some(&8), tree.successor_post_order(6),"6->8");
+        assert_eq!(Some(&7), tree.successor_post_order(8),"8->7");
+        assert_eq!(Some(&10), tree.successor_post_order(7),"7->10");
+        assert_eq!(Some(&9), tree.successor_post_order(10),"10->9");
+        assert_eq!(Some(&4), tree.successor_post_order(9),"9->4");
+
+        let mut buf:Vec<&i32> = vec![];
+        for item in tree.iter_post_order(){  //Тут и in-order
+            buf.push(item);
+        }
+        assert_eq!(buf, vec![&2, &1, &3, &6, &8, &7, &10, &9, &4]);
+       
+        assert!(tree.find(8),"find true");
+        tree.remove(8);
+        assert!(!tree.find(8),"find false");
+ 
+        let mut buf:Vec<&i32> = vec![];
+        for item in tree.iter_post_order(){  //Тут и in-order
+            buf.push(item);
+        }
+        let nodes = tree.depth_first_post_order_recursive();
+        assert_eq!(nodes.len(),tree.node_count());
+        assert_eq!(nodes,buf);
+        assert_eq!(nodes, vec![&2, &1, &3, &6, &7, &10, &9, &4]);
+
+        assert!(tree.find(9),"find true");
+        tree.remove(9);
+        assert!(!tree.find(9),"find false");
+
+        let mut buf:Vec<&i32> = vec![];
+        for item in tree.iter_post_order(){  //Тут и in-order
+            buf.push(item);
+        }
+        let nodes = tree.depth_first_post_order_recursive();
+        assert_eq!(nodes.len(),tree.node_count());
+        assert_eq!(nodes,buf);
+        assert_eq!(nodes, vec![&2, &1, &3, &6, &10, &7, &4]);
     }
+
+    #[cfg(feature = "post-order")]
+    #[test]
+    fn test_post_order_success() {
+        let mut tree: Tree<i32> = Tree::new();
+        tree.insert(4);
+        tree.insert(3);
+        tree.insert(9);
+        tree.insert(1);
+        tree.insert(2);
+        tree.insert(7);
+        tree.insert(8);
+        tree.insert(6);  
+        tree.insert(10);
+
+        assert!(tree.find(9),"find true");
+        tree.remove(9);
+        assert!(!tree.find(9),"find false");
+ 
+        let mut buf:Vec<&i32> = vec![];
+        for item in tree.iter_post_order(){  
+            buf.push(item);
+        }
+
+        let nodes = tree.depth_first_post_order_recursive();
+        assert_eq!(nodes, vec![&2, &1, &3, &6, &10, &8, &7, &4]);
+        assert_eq!(nodes, buf);
+        assert_eq!(nodes.len(),tree.node_count());
+    }
+
+    /*#[test]
+    fn test_std_btree(){
+        use std::collections::BTreeMap;
+        let mut tree = BTreeMap::new();
+        tree.insert(4,       4);
+        tree.insert(3,3);
+        tree.insert(9,9);
+        tree.insert(1,1);
+        tree.insert(2,2);
+        tree.insert(10,10);
+        tree.insert(7,7);
+        tree.insert(8,8);
+        tree.insert(6,6);  
+        println!("BTreeMap:{:?}",tree);
+    }*/
 }
