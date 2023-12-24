@@ -10,7 +10,6 @@ mod ds_binary_tree{
     use std::marker::PhantomData;
     use std::ptr::NonNull;
 
-    //#[derive(Debug)]
     pub struct Tree<T: PartialEq + PartialOrd + Display + Clone> {
         root: Link<T>,
         count: usize,
@@ -144,25 +143,24 @@ mod ds_binary_tree{
 
         /// Возвращает все данные дерева
         /// Обратный поиск в глубину (Post order).
-        /*#[cfg(feature = "post-order")]
-        pub fn depth_first_post_order_recursive(&self) -> Vec<&T> {
-            let mut v = vec![];
-            if let Some(root) = self.root{
-                unsafe {
-                    post_order_recursive((*root.as_ref()).left, &mut v);
-                    post_order_recursive((*root.as_ref()).right, &mut v);
-                    v.push(&(*root.as_ref()).elem);
-                }
-            }
-            v
-        }*/
+        //#[cfg(feature = "post-order")]
+        //pub fn depth_first_post_order_recursive(&self) -> Vec<&T> {
+        //    let mut v = vec![];
+        //    if let Some(root) = self.root{
+        //        unsafe {
+        //            post_order_recursive((*root.as_ref()).left, &mut v);
+        //            post_order_recursive((*root.as_ref()).right, &mut v);
+        //            v.push(&(*root.as_ref()).elem);
+        //        }
+        //    }
+        //    v
+        //}
 
         #[cfg(feature = "post-order")]
         pub fn depth_first_post_order_recursive(&self) -> Vec<&T> {
             let mut v = vec![];
             if let Some(root) = self.root{
                 let mut node: Link<T> = Some(leaf_post_order(root));
-                let mut is_root = false;
                 loop {
                     if let Some(n) = node{
                         unsafe {
@@ -171,8 +169,7 @@ mod ds_binary_tree{
                                 break;
                             }                            
                         }
-                        node = successor_of_node_post_order(n); 
-                                       
+                        node = successor_of_node_post_order(n);              
                     }else{
                         break;
                     }
@@ -209,7 +206,7 @@ mod ds_binary_tree{
         }
 
         /// Найти следующий элемент данного элемента в дереве.  
-        /// Метод прохода по дереву - поиск в глубину симметричным способом (In-order).
+        /// Симметричный поиск в глубину (In-order).
         #[cfg(feature = "in-order")]
         pub fn successor_in_order(&self, elem: T) -> Option<&T>{
             unsafe {
@@ -224,7 +221,7 @@ mod ds_binary_tree{
         }
  
         /// Найти следующий элемент данного элемента в дереве.  
-        /// Метод прохода по дереву - поиск в глубину обратным способом (Post order).
+        /// Обратный поиск в глубину (Post order).
         #[cfg(feature = "post-order")]
         pub fn successor_post_order(&self, elem: T) -> Option<&T>{
             unsafe {
@@ -238,7 +235,7 @@ mod ds_binary_tree{
         }
 
         /// Найти следующий элемент данного элемента в дереве. 
-        /// Метод прохода по дереву - поиск в глубину прямым способом (Pre order). 
+        /// Прямой поиск в глубину (Pre order). 
         #[cfg(feature = "pre-order")]
         pub fn successor_pre_order(&self, elem: T) -> Option<&T>{
             unsafe {
@@ -252,7 +249,7 @@ mod ds_binary_tree{
             } 
         }
 
-        fn remove_branch(&mut self, mut node: NonNull<Node<T>>){
+        fn remove_branch(&mut self, node: NonNull<Node<T>>){
             unsafe {
                 let left = (*node.as_ref()).left;
                 let right = (*node.as_ref()).right;
@@ -271,25 +268,20 @@ mod ds_binary_tree{
             }
         }
 
-        fn remove_node(&mut self, mut node: NonNull<Node<T>>){
+        fn remove_node(&mut self, node: NonNull<Node<T>>){
             unsafe {  
                 let left = (*node.as_ref()).left;
                 let right = (*node.as_ref()).right;
                 if left.is_none() && right.is_none() {  
                     // У узла нет дочерних элементов, поэтому его можно безопасно удалить.
-                    
                     self.remove_leaf(node);
                 } else if left.is_some() && right.is_none() {
-                      
                     self.replace_node(node, left);
                 } else if left.is_none() && right.is_some() { 
-                    
                     self.replace_node(node, right);
                 } else if left.is_some() && right.is_some() {
-
                     self.replace_node(node, left);
-
-                    // перекинуть branch right
+                    // перекинуть right branch
                     let nodes = self.depth_first_get_values(right);
                     for el in nodes{
                         if self.insert(el){ 
@@ -333,7 +325,7 @@ mod ds_binary_tree{
                         // поменять ссылку на родителя
                         (*replace.as_mut()).parent = Some(parent);
                          
-                        // поменять у родителя ссылку  
+                        // поменять у родителя ссылки 
                         if let Some(ref mut left) = (*parent.as_mut()).left{
                             if std::ptr::eq(left.as_ptr(), node.as_ptr()){
                                 *left = *replace;
@@ -370,6 +362,32 @@ mod ds_binary_tree{
         #[cfg(feature = "post-order")]
         pub fn iter_post_order(&self) -> IterPostOrder<T> {
             IterPostOrder::new(self.root, self.count)
+        }
+    }
+
+    impl<T: Display> Node<T> {
+        fn new(elem: T) -> Link<T>  {
+            unsafe {
+                let new = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
+                    left: None,
+                    right: None,
+                    parent: None,
+                    elem,
+                })));
+                Some(new)
+            }
+        }
+
+        fn new_with_parent(elem: T, parent: NonNull<Node<T>>) -> Link<T>  {
+            unsafe {
+                let new = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
+                    left: None,
+                    right: None, 
+                    parent: Some(parent),
+                    elem,
+                })));
+                Some(new)
+            }
         }
     }
 
@@ -431,7 +449,6 @@ mod ds_binary_tree{
             current_node: Link<T>,
             count: usize,
             elem: Option<&'a T>,
-            //is_start: bool,
             _boo: PhantomData<&'a T>,
         }
 
@@ -536,7 +553,6 @@ mod ds_binary_tree{
             current_node: Link<T>,
             count: usize,
             elem: Option<&'a T>,
-            is_root: bool,
             _boo: PhantomData<&'a T>,
         }
 
@@ -546,7 +562,6 @@ mod ds_binary_tree{
                     current_node: root,
                     count,
                     elem: None,
-                    is_root: false,
                     _boo: PhantomData
                 }
             }
@@ -656,32 +671,6 @@ mod ds_binary_tree{
     }
     // ------------------------------------------------------------------
  
-    impl<T:Display> Node<T> {
-        fn new(elem: T) -> Link<T>  {
-            unsafe {
-                let new = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
-                    left: None,
-                    right: None,
-                    parent: None,
-                    elem,
-                })));
-                Some(new)
-            }
-        }
-
-        fn new_with_parent(elem: T, parent: NonNull<Node<T>>) -> Link<T>  {
-            unsafe {
-                let new = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
-                    left: None,
-                    right: None, 
-                    parent: Some(parent),
-                    elem,
-                })));
-                Some(new)
-            }
-        }
-    }
-
     // Вставляет `elem` в новый узел поддерева `node`.
     fn insert_node<T:PartialEq+PartialOrd+Display>(node: NonNull<Node<T>>, elem: T) -> bool {
         unsafe {
@@ -725,7 +714,7 @@ mod ds_binary_tree{
     }
 
     // Находит данные в поддереве `fromnode`. 
-    fn find_node<T: PartialEq + PartialOrd+Display>(fromnode: Option<NonNull<Node<T>>>, elem: T) -> Option<NonNull<Node<T>>>{
+    fn find_node<T: PartialEq + PartialOrd + Display>(fromnode: Option<NonNull<Node<T>>>, elem: T) -> Option<NonNull<Node<T>>>{
         unsafe {
             if let Some(fromnode) = fromnode{
                 if (*fromnode.as_ptr()).elem == elem {
@@ -747,6 +736,8 @@ mod ds_binary_tree{
     mod depth_first_post_order{
         use super::{Link, NonNull, Node};
         use std::fmt::Display;
+        
+        #[allow(dead_code)]
         pub fn post_order_recursive<T: Display>(node: Link<T>, buf: &mut Vec<&T>){
             if let Some(node) = node{
                 unsafe { 
@@ -865,7 +856,6 @@ mod ds_binary_tree{
             }
         } 
 
-        //--------------------------------------------------------------------------
         // Найдите преемника узла в дереве.
         pub fn successor_of_node_in_order<T:Display>(node: NonNull<Node<T>>) -> Link<T> {
             unsafe {
@@ -903,8 +893,6 @@ mod ds_binary_tree{
         // ребенок.
         fn parent_with_left<T:Display>(node: NonNull<Node<T>>) -> Link<T> {
             unsafe {
-                // Если у этого узла есть родительский элемент, и у этого родителя есть левый дочерний элемент, и
-                // `node` — это левый дочерний элемент, мы его нашли!
                 let parent = (*node.as_ref()).parent;
                 if let Some(parent) = parent{
                     if let Some(left) = (*parent.as_ref()).left{
@@ -1114,7 +1102,7 @@ mod tests {
         assert_eq!(Some(&4), tree.successor_post_order(9),"9->4");
 
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_post_order(){  //Тут и in-order
+        for item in tree.iter_post_order(){ //Тут и in-order
             buf.push(item);
         }
         assert_eq!(buf, vec![&2, &1, &3, &6, &8, &7, &10, &9, &4]);
