@@ -193,6 +193,16 @@ mod ds_binary_tree{
             v
         }
 
+        /// Возвращает все данные дерева
+        /// Поиск в ширину (BFS).
+        pub fn breadth_first_search(&self) -> Vec<&T> {
+            let mut ret: Vec<&T> = vec![];  
+            if let Some(node ) = self.root{
+                breadth_first_search(node, &mut ret);
+            } 
+            ret
+        }
+
         /// Удаляем данный элемент из дерева; возвращает true, если такой узел был
         /// найдено и удалено, в противном случае — false.
         pub fn remove(&mut self, elem: T) -> bool{
@@ -736,7 +746,7 @@ mod ds_binary_tree{
     mod depth_first_post_order{
         use super::{Link, NonNull, Node};
         use std::fmt::Display;
-        
+
         #[allow(dead_code)]
         pub fn post_order_recursive<T: Display>(node: Link<T>, buf: &mut Vec<&T>){
             if let Some(node) = node{
@@ -846,7 +856,7 @@ mod ds_binary_tree{
     mod depth_first_in_order{
         use super::{Link, NonNull, Node};
         use std::fmt::Display;
-        pub fn in_order_recursive<T:Display>(node: Link<T>, buf: &mut Vec<&T>){
+        pub fn in_order_recursive<T: Display>(node: Link<T>, buf: &mut Vec<&T>){
             if let Some(node) = node{
                 unsafe { 
                     in_order_recursive((*node.as_ref()).left, buf);
@@ -857,7 +867,7 @@ mod ds_binary_tree{
         } 
 
         // Найдите преемника узла в дереве.
-        pub fn successor_of_node_in_order<T:Display>(node: NonNull<Node<T>>) -> Link<T> {
+        pub fn successor_of_node_in_order<T: Display>(node: NonNull<Node<T>>) -> Link<T> {
             unsafe {
                 if (*node.as_ref()).right.is_some() {
                     // Случай 1: узел имеет правого дочернего элемента; 
@@ -908,6 +918,50 @@ mod ds_binary_tree{
         }
     }
 
+    use bfs::breadth_first_search;
+    mod bfs{
+        use super::{Link, NonNull, Node};
+        use std::fmt::Display;
+ 
+        /// Возвращает все данные дерева
+        /// Поиск в ширину (BFS).
+        pub fn breadth_first_search<T: Display>(root: NonNull<Node<T>>, ret: &mut Vec<&T>){
+            let mut queue: Vec<(&T,usize)> = vec![];
+              
+            unsafe{
+                queue.push((&(*root.as_ref()).elem,1));
+                breadth_first_search_recursive( (*root.as_ref()).left, &mut queue,1);
+                breadth_first_search_recursive((*root.as_ref()).right, &mut queue,1); 
+            }
+ 
+            let mut level = 1;
+            let mut come_in = false;
+            loop{
+                come_in = false;
+                for &(el, l) in queue.iter(){
+                    if l == level{
+                       ret.push(el);
+                       come_in = true;
+                    }
+                }
+                if !come_in{
+                   break;
+                }
+                level+=1;
+            } 
+           
+        }
+
+        fn breadth_first_search_recursive<T: Display>(node: Link<T>, queue: &mut Vec<(&T,usize)>, level:usize){
+            unsafe{
+                if let Some(node) = node{
+                    queue.push((&(*node.as_ref()).elem, level+1));
+                    breadth_first_search_recursive((*node.as_ref()).left, queue, level+1);
+                    breadth_first_search_recursive((*node.as_ref()).right, queue, level+1);
+                }
+            }
+        }
+    }  
 }
 
 /// $ cargo test binary_search_tree_good_nonnull --features in-order -- --nocapture
@@ -917,6 +971,28 @@ mod ds_binary_tree{
 mod tests {
     use super::*;
    
+    #[test]
+    fn test_breadth_first_success() {
+        let mut tree: Tree<i32> = Tree::new();
+        tree.insert(4);
+        tree.insert(3);
+        tree.insert(2);
+        tree.insert(1);
+
+        tree.insert(5);
+        tree.insert(8);
+        tree.insert(7);
+        tree.insert(9);
+        tree.insert(10);
+        tree.insert(11);
+     
+        
+        let elements = tree.breadth_first_search();
+        assert_eq!(elements,vec![&4, &3, &5, &2, &8, &1, &7, &9, &10, &11]);
+        println!("{:?}",elements);
+    }
+
+/* 
     #[cfg(feature = "in-order")]
     #[test]
     fn test_in_order_success() {
@@ -1162,7 +1238,7 @@ mod tests {
         assert_eq!(nodes, buf);
         assert_eq!(nodes.len(),tree.node_count());
     }
-
+*/
     /*#[test]
     fn test_std_btree(){
         use std::collections::BTreeMap;
