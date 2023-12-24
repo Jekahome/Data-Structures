@@ -986,13 +986,11 @@ mod tests {
         tree.insert(10);
         tree.insert(11);
      
-        
         let elements = tree.breadth_first_search();
         assert_eq!(elements,vec![&4, &3, &5, &2, &8, &1, &7, &9, &10, &11]);
         println!("{:?}",elements);
     }
 
-/* 
     #[cfg(feature = "in-order")]
     #[test]
     fn test_in_order_success() {
@@ -1238,7 +1236,7 @@ mod tests {
         assert_eq!(nodes, buf);
         assert_eq!(nodes.len(),tree.node_count());
     }
-*/
+
     /*#[test]
     fn test_std_btree(){
         use std::collections::BTreeMap;
