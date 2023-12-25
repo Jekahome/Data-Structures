@@ -1,5 +1,5 @@
 // Safe approach using Option<Rc<RefCell<Node>>>.
-// 
+//
 // Eli Bendersky [https://eli.thegreenplace.net]
 // This code is in the public domain.
 // https://github.com/eliben/code-for-blog/blob/master/2021/rust-bst/src/rcrefcell.rs

@@ -306,10 +306,8 @@ mod tests {
         tree.insert(6);
         tree.insert(9);
         let nodes = tree.inorder();
-        println!("inorder:{:?}",nodes);
-        println!("display:\n{}",tree.display());
+        println!("inorder:{:?}", nodes);
+        println!("display:\n{}", tree.display());
         assert!(true);
-
     }
-
 }

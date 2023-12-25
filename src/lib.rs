@@ -13,7 +13,10 @@ pub use linked_list::{
 };
 
 mod binary_tree;
-pub use binary_tree::{binary_tree_rc, binary_tree_ptr};
+pub use binary_tree::{binary_tree_ptr, binary_tree_rc};
 
 mod binary_search_tree;
-pub use binary_search_tree::{binary_search_tree_good_nonnull, binary_search_tree_nodehandle, binary_search_tree_rcrefcell, binary_search_tree_unsafeall};
+pub use binary_search_tree::{
+    binary_search_tree_good_nonnull, binary_search_tree_nodehandle, binary_search_tree_rcrefcell,
+    binary_search_tree_unsafeall,
+};
