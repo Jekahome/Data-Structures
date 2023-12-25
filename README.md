@@ -503,6 +503,8 @@ Storage `O(V+E)`, Add Vertex `O(1)`, Add Edge `O(1)`, Remove Vertex `O(V+E)`, Re
 - Поиск в ширину (breadth-first search) – обход по уровням
 - Поиск в глубину (depth-first search) – обход по вершинам
 
+[Graph Поиск в ширину](https://ru.algorithmica.org/cs/shortest-paths/bfs/)
+
 ```
 Элементарные структуры данных
 Хеширование и хеш-таблицы

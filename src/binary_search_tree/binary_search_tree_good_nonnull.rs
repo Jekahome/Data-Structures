@@ -198,7 +198,9 @@ mod ds_binary_tree{
         pub fn breadth_first_search(&self) -> Vec<&T> {
             let mut ret: Vec<&T> = vec![];  
             if let Some(node ) = self.root{
-                breadth_first_search(node, &mut ret);
+                // breadth_first_search(node, &mut ret);
+                // or
+                breadth_first_search_with_deque(node, &mut ret);
             } 
             ret
         }
@@ -373,6 +375,7 @@ mod ds_binary_tree{
         pub fn iter_post_order(&self) -> IterPostOrder<T> {
             IterPostOrder::new(self.root, self.count)
         }
+
     }
 
     impl<T: Display> Node<T> {
@@ -918,23 +921,43 @@ mod ds_binary_tree{
         }
     }
 
-    use bfs::breadth_first_search;
+    use bfs::{breadth_first_search, breadth_first_search_with_deque};
     mod bfs{
         use super::{Link, NonNull, Node};
         use std::fmt::Display;
- 
+        use std::collections::VecDeque;
+
+        pub fn breadth_first_search_with_deque<T: Display>(root: NonNull<Node<T>>, ret: &mut Vec<&T>){
+            let mut deque: VecDeque<NonNull<Node<T>>>  = VecDeque::new();
+            unsafe{
+                deque.push_back(root);
+                let mut node: NonNull<Node<T>>;
+                while !deque.is_empty(){
+                    node = deque.pop_front().unwrap();
+                    ret.push(&(*node.as_ref()).elem);
+                    if let Some(left) = (*node.as_ref()).left{
+                        deque.push_back(left);
+                    }
+                    if let Some(right) = (*node.as_ref()).right{
+                        deque.push_back(right);
+                    }
+                }
+            }
+        }
+
         /// Возвращает все данные дерева
         /// Поиск в ширину (BFS).
+        #[allow(dead_code)]
         pub fn breadth_first_search<T: Display>(root: NonNull<Node<T>>, ret: &mut Vec<&T>){
             let mut queue: Vec<(&T,usize)> = vec![];
-              
             unsafe{
                 queue.push((&(*root.as_ref()).elem,1));
                 breadth_first_search_recursive( (*root.as_ref()).left, &mut queue,1);
                 breadth_first_search_recursive((*root.as_ref()).right, &mut queue,1); 
             }
- 
             let mut level = 1;
+            
+            #[allow(unused_assignments)]
             let mut come_in = false;
             loop{
                 come_in = false;
@@ -949,9 +972,9 @@ mod ds_binary_tree{
                 }
                 level+=1;
             } 
-           
         }
 
+        #[allow(dead_code)]
         fn breadth_first_search_recursive<T: Display>(node: Link<T>, queue: &mut Vec<(&T,usize)>, level:usize){
             unsafe{
                 if let Some(node) = node{
@@ -972,7 +995,7 @@ mod tests {
     use super::*;
    
     #[test]
-    fn test_breadth_first_success() {
+    fn test_bfs_success() {
         let mut tree: Tree<i32> = Tree::new();
         tree.insert(4);
         tree.insert(3);
@@ -988,12 +1011,11 @@ mod tests {
      
         let elements = tree.breadth_first_search();
         assert_eq!(elements,vec![&4, &3, &5, &2, &8, &1, &7, &9, &10, &11]);
-        println!("{:?}",elements);
     }
 
     #[cfg(feature = "in-order")]
     #[test]
-    fn test_in_order_success() {
+    fn test_dfs_in_order_success() {
         let mut tree: Tree<i32> = Tree::new();
         tree.insert(4);
         tree.insert(3);
@@ -1036,8 +1058,7 @@ mod tests {
 
     #[cfg(feature = "in-order")]
     #[test]
-    fn test_iter_in_order() {
-        // Depth First Search Symmetrical method
+    fn test_dfs_iter_in_order() {
         let mut tree: Tree<i32> = Tree::new();
         tree.insert(4);
         tree.insert(3);
@@ -1072,7 +1093,7 @@ mod tests {
 
     #[cfg(feature = "pre-order")]
     #[test]
-    fn test_iter_pre_order() {
+    fn test_dfs_iter_pre_order() {
         let mut tree: Tree<i32> = Tree::new();
         tree.insert(4);
         tree.insert(3);
@@ -1121,7 +1142,7 @@ mod tests {
     
     #[cfg(feature = "pre-order")]
     #[test]
-    fn test_pre_order_success() {
+    fn test_dfs_pre_order_success() {
         let mut tree: Tree<i32> = Tree::new();
         tree.insert(4);
         tree.insert(3);
@@ -1150,7 +1171,7 @@ mod tests {
 
     #[cfg(feature = "post-order")]
     #[test]
-    fn test_iter_post_order() {
+    fn test_dfs_iter_post_order() {
         let mut tree: Tree<i32> = Tree::new();
         tree.insert(4);
         tree.insert(3);
@@ -1210,7 +1231,7 @@ mod tests {
 
     #[cfg(feature = "post-order")]
     #[test]
-    fn test_post_order_success() {
+    fn test_dfs_post_order_success() {
         let mut tree: Tree<i32> = Tree::new();
         tree.insert(4);
         tree.insert(3);
