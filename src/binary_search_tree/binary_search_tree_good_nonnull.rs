@@ -220,7 +220,7 @@ mod ds_binary_tree{
         /// Найти следующий элемент данного элемента в дереве.  
         /// Симметричный поиск в глубину (In-order).
         #[cfg(feature = "in-order")]
-        pub fn successor_in_order(&self, elem: T) -> Option<&T>{
+        pub fn successor_dfs_in_order(&self, elem: T) -> Option<&T>{
             unsafe {
                 let node = find_node(self.root, elem);
                 if let Some(n) = node {
@@ -235,7 +235,7 @@ mod ds_binary_tree{
         /// Найти следующий элемент данного элемента в дереве.  
         /// Обратный поиск в глубину (Post order).
         #[cfg(feature = "post-order")]
-        pub fn successor_post_order(&self, elem: T) -> Option<&T>{
+        pub fn successor_dfs_post_order(&self, elem: T) -> Option<&T>{
             unsafe {
                 if let Some(n) = find_node(self.root, elem) {
                     if let Some(nodesucc) = successor_of_node_post_order(n){
@@ -249,7 +249,7 @@ mod ds_binary_tree{
         /// Найти следующий элемент данного элемента в дереве. 
         /// Прямой поиск в глубину (Pre order). 
         #[cfg(feature = "pre-order")]
-        pub fn successor_pre_order(&self, elem: T) -> Option<&T>{
+        pub fn successor_dfs_pre_order(&self, elem: T) -> Option<&T>{
             unsafe {
                 let node = find_node(self.root, elem);
                 if let Some(n) = node {
@@ -362,17 +362,17 @@ mod ds_binary_tree{
         }
 
         #[cfg(feature = "in-order")]
-        pub fn iter_in_order(&self) -> IterInOrder<T> {
+        pub fn iter_dfs_in_order(&self) -> IterInOrder<T> {
             IterInOrder::new(leftmost_child_in_order(self.root), self.count)
         }
 
         #[cfg(feature = "pre-order")]
-        pub fn iter_pre_order(&self) -> IterPreOrder<T> {
+        pub fn iter_dfs_pre_order(&self) -> IterPreOrder<T> {
             IterPreOrder::new(self.root, self.count)
         }
 
         #[cfg(feature = "post-order")]
-        pub fn iter_post_order(&self) -> IterPostOrder<T> {
+        pub fn iter_dfs_post_order(&self) -> IterPostOrder<T> {
             IterPostOrder::new(self.root, self.count)
         }
 
@@ -452,12 +452,12 @@ mod ds_binary_tree{
 
     /// Итерация методом прохода по дереву - поиск в глубину симметричным способом (In-order)
     #[cfg(feature = "in-order")]
-    use iter_depth_first_in_order::IterInOrder;
+    use iter_dfs_in_order::IterInOrder;
     #[cfg(feature = "in-order")]
-    mod iter_depth_first_in_order{
+    mod iter_dfs_in_order{
         use std::fmt::Display; 
         use super::{Link,PhantomData};
-        use super::depth_first_in_order::{leftmost_child_in_order, successor_of_node_in_order};
+        use super::dfs_in_order::{leftmost_child_in_order, successor_of_node_in_order};
         pub struct IterInOrder<'a, T: PartialEq + PartialOrd + Display + Clone> {
             current_node: Link<T>,
             count: usize,
@@ -503,12 +503,12 @@ mod ds_binary_tree{
     }
 
     #[cfg(feature = "pre-order")]
-    use iter_depth_first_pre_order::IterPreOrder;
+    use iter_dfs_pre_order::IterPreOrder;
     #[cfg(feature = "pre-order")]
-    mod iter_depth_first_pre_order{
+    mod iter_dfs_pre_order{
         use std::fmt::Display; 
         use super::{Link,PhantomData};
-        use super::depth_first_pre_order::successor_of_node_pre_order;
+        use super::dfs_pre_order::successor_of_node_pre_order;
 
         pub struct IterPreOrder<'a, T: PartialEq + PartialOrd + Display> {
             current_node: Link<T>,
@@ -555,12 +555,12 @@ mod ds_binary_tree{
     }
 
     #[cfg(feature = "post-order")]
-    use iter_depth_first_post_order::IterPostOrder;
+    use iter_dfs_post_order::IterPostOrder;
     #[cfg(feature = "post-order")]
-    mod iter_depth_first_post_order{
+    mod iter_dfs_post_order{
         use std::fmt::Display; 
         use super::{Link,PhantomData};
-        use super::depth_first_post_order::successor_of_node_post_order;
+        use super::dfs_post_order::successor_of_node_post_order;
     
         pub struct IterPostOrder<'a, T: PartialEq + PartialOrd + Display + Clone> {
             current_node: Link<T>,
@@ -653,7 +653,7 @@ mod ds_binary_tree{
     #[cfg(feature = "in-order")]
     impl<T: PartialEq + PartialOrd + Display + Clone> PartialEq for Tree<T> {
         fn eq(&self, other: &Self) -> bool {
-            self.node_count() == other.node_count() && self.iter_in_order().eq(other)
+            self.node_count() == other.node_count() && self.iter_dfs_in_order().eq(other)
         }
     }
 
@@ -663,14 +663,14 @@ mod ds_binary_tree{
     #[cfg(feature = "in-order")]
     impl<T: PartialEq + PartialOrd + Display + Clone> PartialOrd for Tree<T> {
         fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            self.iter_in_order().partial_cmp(other)
+            self.iter_dfs_in_order().partial_cmp(other)
         }
     }
 
     #[cfg(feature = "in-order")]
     impl<T: Ord + PartialEq + PartialOrd + Display + Clone> Ord for Tree<T> {
         fn cmp(&self, other: &Self) -> Ordering {
-            self.iter_in_order().cmp(other)
+            self.iter_dfs_in_order().cmp(other)
         }
     }
 
@@ -744,9 +744,9 @@ mod ds_binary_tree{
     } 
 
     #[cfg(feature = "post-order")]
-    use depth_first_post_order::{post_order_recursive, successor_of_node_post_order, leaf_post_order};
+    use dfs_post_order::{post_order_recursive, successor_of_node_post_order, leaf_post_order};
     #[cfg(feature = "post-order")]
-    mod depth_first_post_order{
+    mod dfs_post_order{
         use super::{Link, NonNull, Node};
         use std::fmt::Display;
 
@@ -795,9 +795,9 @@ mod ds_binary_tree{
     }
 
     #[cfg(feature = "pre-order")]
-    use depth_first_pre_order::{pre_order_recursive, successor_of_node_pre_order};
+    use dfs_pre_order::{pre_order_recursive, successor_of_node_pre_order};
     #[cfg(feature = "pre-order")]
-    mod depth_first_pre_order{
+    mod dfs_pre_order{
         use super::{Link, NonNull, Node};
         use std::fmt::Display;
 
@@ -854,9 +854,9 @@ mod ds_binary_tree{
     }
 
     #[cfg(feature = "in-order")]
-    use depth_first_in_order::{in_order_recursive, leftmost_child_in_order, successor_of_node_in_order};
+    use dfs_in_order::{in_order_recursive, leftmost_child_in_order, successor_of_node_in_order};
     #[cfg(feature = "in-order")]
-    mod depth_first_in_order{
+    mod dfs_in_order{
         use super::{Link, NonNull, Node};
         use std::fmt::Display;
         pub fn in_order_recursive<T: Display>(node: Link<T>, buf: &mut Vec<&T>){
@@ -956,7 +956,7 @@ mod ds_binary_tree{
                 breadth_first_search_recursive((*root.as_ref()).right, &mut queue,1); 
             }
             let mut level = 1;
-            
+
             #[allow(unused_assignments)]
             let mut come_in = false;
             loop{
@@ -1037,7 +1037,7 @@ mod tests {
         assert_eq!(nodes.len(),tree.node_count());
 
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_in_order(){
+        for item in tree.iter_dfs_in_order(){
             buf.push(item);
         }
         assert_eq!(buf,vec![&1, &2, &3, &4, &6, &7, &8, &10, &11]);
@@ -1050,7 +1050,7 @@ mod tests {
         assert_eq!(nodes.len(),tree.node_count());
 
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_in_order(){
+        for item in tree.iter_dfs_in_order(){
             buf.push(item);
         }
         assert_eq!(buf,vec![&1, &2, &3, &4, &7, &8, &10, &11]);
@@ -1072,7 +1072,7 @@ mod tests {
         //println!("display:\n{}",tree.display());
 
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_in_order(){
+        for item in tree.iter_dfs_in_order(){
             buf.push(item);
         }
         assert_eq!(buf,vec![&1, &2, &3, &4, &6, &7, &8, &9, &10]);
@@ -1080,15 +1080,15 @@ mod tests {
         let elements = tree.depth_first_in_order_recursive(None);
         assert_eq!(elements,vec![&1, &2, &3, &4, &6, &7, &8, &9, &10]);
 
-        assert_eq!(Some(&6), tree.successor_in_order(4),"4->6");
-        assert_eq!(Some(&2), tree.successor_in_order(1),"1->2");
-        assert_eq!(Some(&3), tree.successor_in_order(2),"2->3");
-        assert_eq!(Some(&4), tree.successor_in_order(3),"3->4");
-        assert_eq!(Some(&6), tree.successor_in_order(4),"4->6");
-        assert_eq!(Some(&7), tree.successor_in_order(6),"6->7");
-        assert_eq!(Some(&8), tree.successor_in_order(7),"7->8");
-        assert_eq!(Some(&9), tree.successor_in_order(8),"8->9");
-        assert_eq!(Some(&10), tree.successor_in_order(9),"9->10");
+        assert_eq!(Some(&6), tree.successor_dfs_in_order(4),"4->6");
+        assert_eq!(Some(&2), tree.successor_dfs_in_order(1),"1->2");
+        assert_eq!(Some(&3), tree.successor_dfs_in_order(2),"2->3");
+        assert_eq!(Some(&4), tree.successor_dfs_in_order(3),"3->4");
+        assert_eq!(Some(&6), tree.successor_dfs_in_order(4),"4->6");
+        assert_eq!(Some(&7), tree.successor_dfs_in_order(6),"6->7");
+        assert_eq!(Some(&8), tree.successor_dfs_in_order(7),"7->8");
+        assert_eq!(Some(&9), tree.successor_dfs_in_order(8),"8->9");
+        assert_eq!(Some(&10), tree.successor_dfs_in_order(9),"9->10");
     }
 
     #[cfg(feature = "pre-order")]
@@ -1107,13 +1107,13 @@ mod tests {
         let elements = tree.depth_first_pre_order_recursive();
         assert_eq!(elements,vec![&4, &3, &1, &2, &9, &7, &6, &8, &10]);
         
-        assert_eq!(Some(&3), tree.successor_pre_order(4),"4->3");
-        assert_eq!(Some(&9), tree.successor_pre_order(2),"2->9");
-        assert_eq!(Some(&8), tree.successor_pre_order(6),"6->8");
-        assert_eq!(Some(&10), tree.successor_pre_order(8),"8->10");
+        assert_eq!(Some(&3), tree.successor_dfs_pre_order(4),"4->3");
+        assert_eq!(Some(&9), tree.successor_dfs_pre_order(2),"2->9");
+        assert_eq!(Some(&8), tree.successor_dfs_pre_order(6),"6->8");
+        assert_eq!(Some(&10), tree.successor_dfs_pre_order(8),"8->10");
 
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_pre_order(){
+        for item in tree.iter_dfs_pre_order(){
             buf.push(item);
         }
         assert_eq!(buf,vec![&4, &3, &1, &2, &9, &7, &6, &8, &10]);
@@ -1134,7 +1134,7 @@ mod tests {
         assert_eq!(nodes,vec![&4, &3, &1, &2, &7, &6, &10]);
 
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_pre_order(){
+        for item in tree.iter_dfs_pre_order(){
             buf.push(item);
         }
         assert_eq!(buf,vec![&4, &3, &1, &2, &7, &6, &10]);
@@ -1159,7 +1159,7 @@ mod tests {
         assert!(!tree.find(8),"find false");
  
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_pre_order(){
+        for item in tree.iter_dfs_pre_order(){
             buf.push(item);
         }
         assert_eq!(buf,vec![&4, &3, &1, &2, &9, &7, &6, &10]);
@@ -1186,18 +1186,18 @@ mod tests {
         let elements = tree.depth_first_post_order_recursive();
         assert_eq!(elements,vec![&2, &1, &3, &6, &8, &7, &10, &9, &4]);
 
-        assert_eq!(Some(&2), tree.successor_post_order(4),"4->2");
-        assert_eq!(Some(&1), tree.successor_post_order(2),"2->1");
-        assert_eq!(Some(&3), tree.successor_post_order(1),"1->3");
-        assert_eq!(Some(&6), tree.successor_post_order(3),"3->6");
-        assert_eq!(Some(&8), tree.successor_post_order(6),"6->8");
-        assert_eq!(Some(&7), tree.successor_post_order(8),"8->7");
-        assert_eq!(Some(&10), tree.successor_post_order(7),"7->10");
-        assert_eq!(Some(&9), tree.successor_post_order(10),"10->9");
-        assert_eq!(Some(&4), tree.successor_post_order(9),"9->4");
+        assert_eq!(Some(&2), tree.successor_dfs_post_order(4),"4->2");
+        assert_eq!(Some(&1), tree.successor_dfs_post_order(2),"2->1");
+        assert_eq!(Some(&3), tree.successor_dfs_post_order(1),"1->3");
+        assert_eq!(Some(&6), tree.successor_dfs_post_order(3),"3->6");
+        assert_eq!(Some(&8), tree.successor_dfs_post_order(6),"6->8");
+        assert_eq!(Some(&7), tree.successor_dfs_post_order(8),"8->7");
+        assert_eq!(Some(&10), tree.successor_dfs_post_order(7),"7->10");
+        assert_eq!(Some(&9), tree.successor_dfs_post_order(10),"10->9");
+        assert_eq!(Some(&4), tree.successor_dfs_post_order(9),"9->4");
 
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_post_order(){ //Тут и in-order
+        for item in tree.iter_dfs_post_order(){ //Тут и in-order
             buf.push(item);
         }
         assert_eq!(buf, vec![&2, &1, &3, &6, &8, &7, &10, &9, &4]);
@@ -1207,7 +1207,7 @@ mod tests {
         assert!(!tree.find(8),"find false");
  
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_post_order(){  //Тут и in-order
+        for item in tree.iter_dfs_post_order(){  //Тут и in-order
             buf.push(item);
         }
         let nodes = tree.depth_first_post_order_recursive();
@@ -1220,7 +1220,7 @@ mod tests {
         assert!(!tree.find(9),"find false");
 
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_post_order(){  //Тут и in-order
+        for item in tree.iter_dfs_post_order(){  //Тут и in-order
             buf.push(item);
         }
         let nodes = tree.depth_first_post_order_recursive();
@@ -1248,7 +1248,7 @@ mod tests {
         assert!(!tree.find(9),"find false");
  
         let mut buf:Vec<&i32> = vec![];
-        for item in tree.iter_post_order(){  
+        for item in tree.iter_dfs_post_order(){  
             buf.push(item);
         }
 
