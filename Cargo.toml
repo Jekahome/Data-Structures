@@ -12,3 +12,4 @@ pre-order = []
 post-order = []
 
 [dependencies]
+rand = "^0.5"
