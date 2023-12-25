@@ -260,7 +260,7 @@ mod ds_binary_tree{
                 None
             } 
         }
-
+ 
         fn remove_branch(&mut self, node: NonNull<Node<T>>){
             unsafe {
                 let left = (*node.as_ref()).left;
@@ -375,6 +375,9 @@ mod ds_binary_tree{
         pub fn iter_dfs_post_order(&self) -> IterPostOrder<T> {
             IterPostOrder::new(self.root, self.count)
         }
+        /*pub fn iter_bfs_post_order(&self) -> IterBFS<T> {
+            IterBFS::new(self.root, self.count)
+        }*/
 
     }
 
@@ -416,7 +419,7 @@ mod ds_binary_tree{
 
     impl<T:Display> Drop for Node<T> {
         fn drop(&mut self) {
-            println!("Drop Node={}",self.elem);
+            //println!("Drop Node={}",self.elem);
         }
     }
     
@@ -921,12 +924,12 @@ mod ds_binary_tree{
         }
     }
 
-    use bfs::{breadth_first_search, breadth_first_search_with_deque};
+    pub use bfs::{breadth_first_search, breadth_first_search_with_deque};
     mod bfs{
         use super::{Link, NonNull, Node};
         use std::fmt::Display;
         use std::collections::VecDeque;
-
+         
         pub fn breadth_first_search_with_deque<T: Display>(root: NonNull<Node<T>>, ret: &mut Vec<&T>){
             let mut deque: VecDeque<NonNull<Node<T>>>  = VecDeque::new();
             unsafe{
