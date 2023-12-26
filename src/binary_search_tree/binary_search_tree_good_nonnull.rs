@@ -62,9 +62,10 @@ mod ds_binary_tree {
         }
 
         /// Возвращает строковое представление дерева для отладки.
+        /// TODO: open http://www.webgraphviz.com/?tab=map 
         pub fn display(&self) -> String {
             if let Some(root) = self.root {
-                return display_node(root, 0);
+               return format!("digraph G {{\n{}}}",display_node(root));
             }
             "".into()
         }
@@ -710,20 +711,18 @@ mod ds_binary_tree {
     }
 
     // Возвращает строковое представление поддерева `node`.
-    fn display_node<T: Display>(node: NonNull<Node<T>>, indent: usize) -> String {
-        let indent_str = " ".repeat(indent);
+    fn display_node<T: Display>(node: NonNull<Node<T>>) -> String {
         unsafe {
-            let mut s = format!("{}{}\n", indent_str, (*node.as_ptr()).elem);
-            if let Some(right) = (*node.as_ptr()).right {
-                s.push_str(&display_node(right, indent + 2));
-            } else {
-                s.push_str(".\n");
-            }
+            let mut s: String = "".into();
             if let Some(left) = (*node.as_ptr()).left {
-                s.push_str(&display_node(left, indent + 2));
-            } else {
-                s.push_str(".\n");
-            }
+                s.push_str(&format!("{}->{}\n",(*node.as_ptr()).elem,(*left.as_ptr()).elem));
+                s.push_str(&display_node(left));
+
+            }  
+            if let Some(right) = (*node.as_ptr()).right {
+                s.push_str(&format!("{}->{}\n",(*node.as_ptr()).elem,(*right.as_ptr()).elem));
+                s.push_str(&display_node(right));
+            } 
             s
         }
     }
@@ -1024,6 +1023,26 @@ mod tests {
         let elements = tree.breadth_first_search();
         assert_eq!(elements, vec![&4, &3, &5, &2, &8, &1, &7, &9, &10, &11]);
     }
+
+    #[cfg(feature = "in-order")]
+    #[test]
+    fn test_dfs_in_order_display() {
+        let mut tree: Tree<i32> = Tree::new();
+        tree.insert(4);
+        tree.insert(3);
+        tree.insert(9);
+        tree.insert(1);
+        tree.insert(2);
+        tree.insert(10);
+        tree.insert(7);
+        tree.insert(8);
+        tree.insert(6);
+        tree.insert(11);
+
+        let fmt = tree.display();
+        println!("{}",fmt);
+    }
+
 
     #[cfg(feature = "in-order")]
     #[test]
