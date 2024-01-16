@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 // https://github.com/PacktPublishing/Hands-On-Data-Structures-and-Algorithms-with-Rust/blob/master/Chapter05/src/graph.rs
 use std::cmp::{Ord, Ordering, min};
 use std::collections::{BTreeSet, BinaryHeap, HashMap, HashSet};

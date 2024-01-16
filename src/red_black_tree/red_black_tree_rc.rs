@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 // https://github.com/PacktPublishing/Hands-On-Data-Structures-and-Algorithms-with-Rust/blob/master/Chapter05/src/red_black_tree.rs
 use std::cell::{Ref, RefCell};
 use std::cmp;
@@ -79,6 +83,41 @@ pub struct BetterDeviceRegistry {
     pub length: u64,
 }
 
+fn display_node (node: BareTree) -> String {
+    unsafe {
+         
+        let mut s: String = "".into();
+        let color = if node.borrow().color == Color::Red{"[color=\"red\"]"}else{"[color=\"black\"]"};
+        let n1 = node.borrow().dev.numerical_id;
+
+        if let Some(left) = node.borrow().left.clone() {
+            s.push_str(&format!("\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n", 
+            n1=n1,
+            n2=left.borrow().dev.numerical_id,
+            color1=color,
+            color2=if left.borrow().color == Color::Red{"[color=\"red\"]"}else{"[color=\"black\"]"},
+            ));
+            s.push_str(&display_node(left));
+        } else if (*node.as_ptr()).right.is_some(){
+            s.push_str(&format!("\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",n1=n1,color1=color));
+            s.push_str(&format!("\tnode_null_{n1}[label=\"null\"]\n",n1=n1));
+        } 
+
+        if let Some(right) = (*node.as_ptr()).right.clone() {
+            s.push_str(&format!("\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n", 
+            n1=n1,
+            n2=right.borrow().dev.numerical_id,
+            color2=if right.borrow().color == Color::Red{"[color=\"red\"]"}else{"[color=\"black\"]"}, 
+            color1=color));
+            s.push_str(&display_node(right));
+        }else{
+            s.push_str(&format!("\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",n1=n1,color1=color));
+            s.push_str(&format!("\tnode_null_{}[label=\"null\"]\n",n1));
+        }
+        s
+    }
+}
+
 impl BetterDeviceRegistry {
     pub fn new_empty() -> BetterDeviceRegistry {
         BetterDeviceRegistry {
@@ -86,7 +125,12 @@ impl BetterDeviceRegistry {
             length: 0,
         }
     }
-
+    pub fn display(&self) -> String {
+        if let Some(root) = self.root.clone() {
+            return format!("\n\ndigraph Tree {{\n\tratio = fill;\n\tnode [style=filled fontcolor=\"white\"];\n{}}}",display_node(root));
+        }
+        "\nTree is empty".into()
+    }
     pub fn add(&mut self, device: IoTDevice) {
         self.length += 1;
         let root = mem::replace(&mut self.root, None);
@@ -95,10 +139,15 @@ impl BetterDeviceRegistry {
     }
 
     fn check(&self, a: &IoTDevice, b: &IoTDevice) -> RBOperation {
-        if a.numerical_id <= b.numerical_id {
+        /*if a.numerical_id <= b.numerical_id {println!("LeftNode");
             RBOperation::LeftNode
-        } else {
+        } else {println!("RightNode");
             RBOperation::RightNode
+        }*/
+        if a.numerical_id <= b.numerical_id {println!("LeftNode");
+            RBOperation::RightNode
+        } else {println!("RightNode");
+            RBOperation::LeftNode
         }
     }
 
@@ -415,5 +464,26 @@ impl BetterDeviceRegistry {
             callback(&n.dev);
             self.walk_in_order(&n.right, callback);
         }
+    }
+}
+
+
+/// $ cargo test red_black_tree_rc -- --nocapture
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_success() {
+        let mut tree = BetterDeviceRegistry::new_empty();
+        let nodes = vec![24,5,1,26,15,3,8/* ,13,16*/];
+        let nodes = 1..=9;
+        for i in nodes{ 
+            let s = format!("{}",i);
+            tree.add(IoTDevice::new(i, s.as_str(), s.as_str()));
+        }
+ 
+        println!("{}",tree.display());
+        assert!(true);
     }
 }

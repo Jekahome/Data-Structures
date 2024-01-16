@@ -10,7 +10,7 @@ mod ds_binary_tree {
     use std::marker::PhantomData;
     use std::ptr::NonNull;
 
-    pub struct Tree<T: PartialEq + PartialOrd + Display + Clone> {
+    pub struct Tree<T: Ord + PartialEq + PartialOrd + Display + Clone> {
         root: Link<T>,
         count: usize,
         _boo: PhantomData<T>,
@@ -26,7 +26,7 @@ mod ds_binary_tree {
         elem: T,
     }
 
-    impl<T: PartialEq + PartialOrd + Display + Clone> Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> Tree<T> {
         pub fn new() -> Self {
             Self {
                 root: None,
@@ -65,12 +65,13 @@ mod ds_binary_tree {
         /// TODO: open http://www.webgraphviz.com/?tab=map 
         pub fn display(&self) -> String {
             if let Some(root) = self.root {
-               return format!("digraph G {{\n{}}}",display_node(root));
+               return format!("digraph Tree {{\n{}}}",display_node(root));
             }
             "".into()
         }
 
-        pub fn depth_first_get_values(&self, start_node: Link<T>) -> Vec<T> {
+        /// Возвращает все данные дерева начиная с узла `start_node`
+        fn depth_first_get_values(&self, start_node: Link<T>) -> Vec<T> {
             let mut v = vec![];
             let node = {
                 if start_node.is_some() {
@@ -265,7 +266,7 @@ mod ds_binary_tree {
             }
         }
 
-        fn remove_branch(&mut self, node: NonNull<Node<T>>) {
+        fn remove_tree(&mut self, node: NonNull<Node<T>>) {
             unsafe {
                 let left = (*node.as_ref()).left;
                 let right = (*node.as_ref()).right;
@@ -274,12 +275,12 @@ mod ds_binary_tree {
                     self.remove_leaf(node);
                     self.count -= 1;
                 } else if left.is_some() && right.is_none() {
-                    self.remove_branch(left.unwrap());
+                    self.remove_tree(left.unwrap());
                 } else if left.is_none() && right.is_some() {
-                    self.remove_branch(right.unwrap());
+                    self.remove_tree(right.unwrap());
                 } else {
-                    self.remove_branch(left.unwrap());
-                    self.remove_branch(right.unwrap());
+                    self.remove_tree(left.unwrap());
+                    self.remove_tree(right.unwrap());
                 }
             }
         }
@@ -296,6 +297,7 @@ mod ds_binary_tree {
                 } else if left.is_none() && right.is_some() {
                     self.replace_node(node, right);
                 } else if left.is_some() && right.is_some() {
+                    // TODO: в идеале найти в левом поддереве максимальный узел и его вставить на место удаляемого
                     self.replace_node(node, left);
                     // перекинуть right branch
                     let nodes = self.depth_first_get_values(right);
@@ -407,13 +409,9 @@ mod ds_binary_tree {
         }
     }
 
-    impl<T: PartialEq + PartialOrd + Display + Clone> Drop for Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> Drop for Tree<T> {
         fn drop(&mut self) {
-            while !self.root.is_none() {
-                if let Some(root) = self.root {
-                    self.remove_branch(root);
-                }
-            }
+            self.remove_tree(self.root.unwrap());
         }
     }
 
@@ -424,7 +422,7 @@ mod ds_binary_tree {
     }
 
     #[cfg(feature = "in-order")]
-    impl<'a, T: PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
+    impl<'a, T: Ord + PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
         type IntoIter = IterInOrder<'a, T>;
         type Item = &'a T;
 
@@ -434,7 +432,7 @@ mod ds_binary_tree {
     }
 
     #[cfg(feature = "pre-order")]
-    impl<'a, T: PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
+    impl<'a, T: Ord + PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
         type IntoIter = IterPreOrder<'a, T>;
         type Item = &'a T;
 
@@ -444,7 +442,7 @@ mod ds_binary_tree {
     }
 
     #[cfg(feature = "post-order")]
-    impl<'a, T: PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
+    impl<'a, T: Ord + PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
         type IntoIter = IterPostOrder<'a, T>;
         type Item = &'a T;
 
@@ -615,13 +613,13 @@ mod ds_binary_tree {
     }
 
     // опционально ------------------------------------------------------
-    impl<T: PartialEq + PartialOrd + Display + Clone> Default for Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> Default for Tree<T> {
         fn default() -> Self {
             Self::new()
         }
     }
 
-    impl<T: PartialEq + PartialOrd + Display + Clone> Clone for Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> Clone for Tree<T> {
         fn clone(&self) -> Self {
             let mut new_list = Self::new();
             for item in self {
@@ -631,7 +629,7 @@ mod ds_binary_tree {
         }
     }
 
-    impl<T: PartialEq + PartialOrd + Display + Clone> Extend<T> for Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> Extend<T> for Tree<T> {
         fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
             for item in iter {
                 self.insert(item);
@@ -639,7 +637,7 @@ mod ds_binary_tree {
         }
     }
 
-    impl<T: PartialEq + PartialOrd + Display + Clone> FromIterator<T> for Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> FromIterator<T> for Tree<T> {
         fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
             let mut list = Self::new();
             list.extend(iter);
@@ -647,24 +645,24 @@ mod ds_binary_tree {
         }
     }
 
-    impl<T: Debug + PartialEq + PartialOrd + Display + Clone> Debug for Tree<T> {
+    impl<T: Ord + Debug + PartialEq + PartialOrd + Display + Clone> Debug for Tree<T> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.debug_list().entries(self).finish()
         }
     }
 
     #[cfg(feature = "in-order")]
-    impl<T: PartialEq + PartialOrd + Display + Clone> PartialEq for Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> PartialEq for Tree<T> {
         fn eq(&self, other: &Self) -> bool {
             self.node_count() == other.node_count() && self.iter_dfs_in_order().eq(other)
         }
     }
 
     #[cfg(feature = "in-order")]
-    impl<T: Eq + PartialEq + PartialOrd + Display + Clone> Eq for Tree<T> {}
+    impl<T: Ord + Eq + PartialEq + PartialOrd + Display + Clone> Eq for Tree<T> {}
 
     #[cfg(feature = "in-order")]
-    impl<T: PartialEq + PartialOrd + Display + Clone> PartialOrd for Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> PartialOrd for Tree<T> {
         fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
             self.iter_dfs_in_order().partial_cmp(other)
         }
@@ -677,7 +675,7 @@ mod ds_binary_tree {
         }
     }
 
-    impl<T: Hash + PartialEq + PartialOrd + Display + Clone> Hash for Tree<T> {
+    impl<T: Ord + Hash + PartialEq + PartialOrd + Display + Clone> Hash for Tree<T> {
         fn hash<H: Hasher>(&self, state: &mut H) {
             self.node_count().hash(state);
             for item in self {
@@ -688,23 +686,27 @@ mod ds_binary_tree {
     // ------------------------------------------------------------------
 
     // Вставляет `elem` в новый узел поддерева `node`.
-    fn insert_node<T: PartialEq + PartialOrd + Display>(node: NonNull<Node<T>>, elem: T) -> bool {
+    fn insert_node<T: Ord + PartialEq + PartialOrd + Display>(node: NonNull<Node<T>>, elem: T) -> bool {
         unsafe {
-            if (*node.as_ptr()).elem == elem {
-                false
-            } else if elem < (*node.as_ptr()).elem {
-                if let Some(left) = (*node.as_ptr()).left {
-                    insert_node(left, elem)
-                } else {
-                    (*node.as_ptr()).left = Node::new_with_parent(elem, node);
-                    true
-                }
-            } else {
-                if let Some(right) = (*node.as_ptr()).right {
-                    insert_node(right, elem)
-                } else {
-                    (*node.as_ptr()).right = Node::new_with_parent(elem, node);
-                    true
+            match elem.cmp(&(*node.as_ptr()).elem) {
+                Ordering::Equal =>{
+                    false
+                },
+                Ordering::Less =>{
+                    if let Some(left) = (*node.as_ptr()).left {
+                        insert_node(left, elem)
+                    } else {
+                        (*node.as_ptr()).left = Node::new_with_parent(elem, node);
+                        true
+                    }
+                },
+                Ordering::Greater => {
+                    if let Some(right) = (*node.as_ptr()).right {
+                        insert_node(right, elem)
+                    } else {
+                        (*node.as_ptr()).right = Node::new_with_parent(elem, node);
+                        true
+                    }
                 }
             }
         }
@@ -717,30 +719,39 @@ mod ds_binary_tree {
             if let Some(left) = (*node.as_ptr()).left {
                 s.push_str(&format!("{}->{}\n",(*node.as_ptr()).elem,(*left.as_ptr()).elem));
                 s.push_str(&display_node(left));
-
-            }  
+            } else if (*node.as_ptr()).right.is_some(){
+                s.push_str(&format!("{}->node_null_{}\n",(*node.as_ptr()).elem, (*node.as_ptr()).elem));
+                s.push_str(&format!("node_null_{}[label=\"NULL\"]\n",(*node.as_ptr()).elem));
+            }
             if let Some(right) = (*node.as_ptr()).right {
                 s.push_str(&format!("{}->{}\n",(*node.as_ptr()).elem,(*right.as_ptr()).elem));
                 s.push_str(&display_node(right));
-            } 
+            }else{
+                s.push_str(&format!("{}->node_null_{}\n",(*node.as_ptr()).elem, (*node.as_ptr()).elem));
+                s.push_str(&format!("node_null_{}[label=\"NULL\"]\n",(*node.as_ptr()).elem));
+            }
             s
         }
     }
 
     // Находит данные в поддереве `fromnode`.
-    fn find_node<T: PartialEq + PartialOrd + Display>(
-        fromnode: Option<NonNull<Node<T>>>,
+    fn find_node<T: Ord + PartialEq + PartialOrd + Display>(
+        fromnode: Link<T>,
         elem: T,
-    ) -> Option<NonNull<Node<T>>> {
+    ) -> Link<T> {
         unsafe {
             if let Some(fromnode) = fromnode {
-                if (*fromnode.as_ptr()).elem == elem {
-                    Some(fromnode)
-                } else if elem < (*fromnode.as_ptr()).elem {
-                    find_node((*fromnode.as_ptr()).left, elem)
-                } else {
-                    find_node((*fromnode.as_ptr()).right, elem)
-                }
+                match elem.cmp(&(*fromnode.as_ptr()).elem) {
+                    Ordering::Equal =>{
+                        Some(fromnode)
+                    },
+                    Ordering::Less =>{
+                        find_node((*fromnode.as_ptr()).left, elem)
+                    },
+                    Ordering::Greater => {
+                        find_node((*fromnode.as_ptr()).right, elem)
+                    }
+                } 
             } else {
                 fromnode
             }

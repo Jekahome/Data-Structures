@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // https://github.com/PacktPublishing/Hands-On-Data-Structures-and-Algorithms-with-Rust/blob/master/Chapter06/src/set.rs
 use std::boxed::Box;
 use std::cell::RefCell;

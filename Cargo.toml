@@ -6,10 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["in-order"]
+default = ["in-order","test-rbt-snapshot"]
 in-order = []
 pre-order = []
 post-order = []
+test-rbt-snapshot = []
 
 [dependencies]
-rand = "^0.5"
+rand = "^0.8"
