@@ -14,7 +14,7 @@ mod llrb {
     use std::ptr::NonNull;
 
     pub struct Tree<T: Ord + PartialEq + PartialOrd + Display + Clone + Debug> {
-        pub root: Link<T>,
+        pub fixed_head: Link<T>,
         count: usize,
         _boo: PhantomData<T>,
     }
@@ -34,7 +34,7 @@ mod llrb {
         Left,
         Right,
         FlipColors, 
-        Skip
+        Nothing
     }
 
     enum OperationRemoveFourOptions{
@@ -61,47 +61,44 @@ mod llrb {
         Unimplemented
     }
 
-    impl<T: Ord + PartialEq + PartialOrd + Display + Clone + Debug> Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Default + Display + Clone + Debug> Tree<T> {
         pub fn new() -> Self {
             Self {
-                root: None,
+                fixed_head: None,
                 count: 0,
                 _boo: PhantomData,
             }
         }
  
         pub fn node_count(&self) -> usize {
-            assert!(self.count != 0 || self.root.is_none());
+            assert!(self.count != 0 || self.fixed_head.is_none());
             self.count
         }
- 
-        pub fn put(&mut self, value: T) -> bool {
-            let elem = value.clone();
-            unsafe{
-                if self.root.is_some(){
-                    if !Tree::put_node(self.root.unwrap(), value){
-                        return false;
-                    }
-                }else{
-                    self.root = Node::new_black(value);   
-                }
-               
-                self.count += 1;
-                true   
-           }
-        }
- 
+  
         /// Найти элемент в дереве.
         pub fn contains(&self, value: T) -> bool {
-            !find_node(self.root, value).is_none()
+            unsafe{
+                let fixed_head = self.fixed_head.unwrap();
+                !find_node((*fixed_head.as_ptr()).left, value).is_none()
+            }
         }
 
+        pub fn get_root(&self) -> Link<T>{
+            if let Some(fixed_head) = self.fixed_head{
+                unsafe{
+                    (*fixed_head.as_ptr()).left
+                }
+            }else{
+                None
+            }
+        }
         // https://youtu.be/a9EwBVLQ364?list=PL79T_6pcZAxwN-q69gAnSle0J_IliNawo&t=613
         // https://youtu.be/OAkmHIR9YkY?t=1096
         // https://www.youtube.com/watch?v=T70nn4EyTrs
         pub fn remove(&mut self, value: T) -> bool {
             unsafe{
-                if let Some(node) = find_node(self.root, value) {
+                let fixed_head = self.fixed_head.unwrap();
+                if let Some(node) = find_node((*fixed_head.as_ptr()).left, value) {
                     if !self.remove_node(node){
                         return false;
                     }
@@ -402,6 +399,8 @@ mod llrb {
                 }
                  
             }else{
+                unimplemented!()
+                /* 
                 // node_a is root
                 let mut node_b = (*n_a.as_ptr()).left.unwrap();
                  
@@ -419,7 +418,7 @@ mod llrb {
                     (*n_a.as_ptr()).left = None;
                     (*node_b.as_ptr()).right = Some(node_d);
                     (*node_d.as_ptr()).parent = Some(node_b);
-                }
+                }*/
             }
             return self.remove_leaf(node_x);
         }
@@ -473,6 +472,8 @@ mod llrb {
 
             }else{
                 // node_a is root
+                unimplemented!()
+                /* 
                 let mut node_b = (*n_a.as_ptr()).left.unwrap();
                 (*node_b.as_mut()).is_red = false;
                 let mut node_c = (*node_b.as_ptr()).right.unwrap();
@@ -484,7 +485,7 @@ mod llrb {
                     (*node_b.as_ptr()).parent = None;
                     (*node_b.as_ptr()).right = Some(n_a);
                     (*n_a.as_ptr()).parent = Some(node_b);
-                }
+                }*/
             }
             return self.remove_leaf(node_x);
         }
@@ -533,6 +534,8 @@ mod llrb {
             }else{
                 // node_a is root
                 //self.root = Some(node_b);
+                unimplemented!()
+                /* 
                 let _ = std::mem::replace(&mut self.root,  Some(node_b));
 
                 if let Some(node_b) = self.root{
@@ -540,7 +543,7 @@ mod llrb {
                     (*node_b.as_ptr()).right = Some(node_a);
                     (*node_a.as_ptr()).parent = Some(node_b);
                     (*node_a.as_ptr()).left = None;
-                }
+                }*/
             }
             return self.remove_leaf(node_x);
         }
@@ -591,6 +594,8 @@ mod llrb {
                 }
             }else{
                 // node_a is root
+                unimplemented!()
+                /* 
                 let _ = std::mem::replace(&mut self.root,  Some(node_d));
                 if let Some(node_d) = self.root{
                     (*node_d.as_ptr()).parent = None;
@@ -600,7 +605,7 @@ mod llrb {
                     (*node_b.as_ptr()).parent = Some(node_d);
                     (*node_a.as_ptr()).right = None;
                     (*node_b.as_ptr()).left = None;
-                }
+                }*/
             }
             return self.remove_leaf(node_x);
         }
@@ -642,7 +647,7 @@ mod llrb {
             // 2. Если P был красным то теперь он станет черным и конец
             //    Если P был черным мы передвигает дважды черноту выше
             unimplemented!();
-            false
+             
         }
 
         /*
@@ -689,7 +694,9 @@ mod llrb {
                 // NEXT
                 self.remove_black_leaf_with_black_deficiency(node_b);
             }else{
-                 // node_a is root
+                // node_a is root
+                unimplemented!()
+                /* 
                 let _ = std::mem::replace(&mut self.root,  Some(node_b));
                 if let Some(node_b) = self.root{
                     (*node_b.as_ptr()).parent = None;
@@ -697,7 +704,7 @@ mod llrb {
                     (*node_b.as_ptr()).left = Some(node_a);
                     (*node_a.as_ptr()).parent = Some(node_b);
                 }
-
+                */
             }
  
             return self.remove_leaf(node_x);
@@ -705,7 +712,7 @@ mod llrb {
 
 
         unsafe fn remove_black_leaf_with_black_deficiency(&mut self, node: NonNull<Node<T>>){
-
+            unimplemented!()
         }
 
         // https://www.youtube.com/watch?v=T70nn4EyTrs
@@ -888,9 +895,12 @@ mod llrb {
                     }
                 }
             } else {
-                self.root = None;
+                let fixed_head = self.fixed_head.unwrap();
+                let _ = Box::from_raw((*fixed_head.as_ptr()).left.unwrap().as_ptr());
+                let _ = Box::from_raw(fixed_head.as_ptr());
+                self.fixed_head = None;
             }
-            let _ = Box::from_raw(node.as_ptr());
+            let _ = Box::from_raw(node.as_ptr());// !!!
             true
         }
 
@@ -915,10 +925,13 @@ mod llrb {
         /// TODO: open http://www.webgraphviz.com/?tab=map 
         /// or https://dreampuf.github.io/GraphvizOnline/
         pub fn display(&self) -> String {
-            if let Some(root) = self.root {
-                return format!("\n\ndigraph Tree {{\n\tratio = fill;\n\tnode [style=filled fontcolor=\"white\"];\n{}}}",display_node(root));
+            unsafe{
+                let fixed_head = self.fixed_head.unwrap();
+                if let Some(root) = (*fixed_head.as_ptr()).left {
+                    return format!("\n\ndigraph Tree {{\n\tratio = fill;\n\tnode [style=filled fontcolor=\"white\"];\n{}}}",display_node(root));
+                }
+                "\nTree is empty".into()                
             }
-            "\nTree is empty".into()
         }
 
         // red-red violations, min black-height, max-black-height
@@ -949,7 +962,8 @@ mod llrb {
 
         pub fn is_a_valid_red_black_tree(&self) -> bool {
             unsafe{
-                let result = self.validate(&self.root, true, 0);
+                let fixed_head = self.fixed_head.unwrap();
+                let result = self.validate(&(*fixed_head.as_ptr()).left, true, 0);
                 let red_red = result.0;
                 let black_height_min = result.1;
                 let black_height_max = result.2;
@@ -1008,6 +1022,7 @@ mod llrb {
         /*
             Rotate left
 
+               |                  |
                A                  C
               / \\               //\
              B    C     =>      A   D
@@ -1015,57 +1030,96 @@ mod llrb {
                 E   D         B   E
 
         */
-        unsafe fn rotate_left(mut node_a: NonNull<Node<T>>) -> Link<T>{
-            if (*node_a.as_ref()).parent.is_some(){
-                println!("rotate_left parent is_some");
-                let parent  = (*node_a.as_ptr()).parent.unwrap();
-                let mut node_a_from_left = false;
-                if let Some(p_node_a) = (*parent.as_ptr()).left{
-                    if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
-                        node_a_from_left = true;
-                    } 
+        unsafe fn rotate_left_with_parent(mut node_a: NonNull<Node<T>>) -> Link<T>{
+            println!("rotate_left parent is_some node_a={}",(*node_a.as_ref()).value);
+            let parent  = (*node_a.as_ptr()).parent.unwrap();
+            let mut node_a_from_left = false;
+            if let Some(p_node_a) = (*parent.as_ptr()).left{
+                if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
+                    node_a_from_left = true;
                 } 
-                return Tree::rotate_left_item( parent, node_a_from_left);
-                 
+            } 
+            return Tree::rotate_left_item( parent, node_a_from_left);
+        }
+
+        /*
+            Rotate left
+            A is root
+                                   
+               A                  C
+              / \\               //\
+             B    C     =>      A   D
+                 / \           / \
+                E   D         B   E
+
+        */
+        unsafe fn rotate_left_without_parent(&mut self, mut node_a: NonNull<Node<T>>) -> Link<T>{
+            println!("rotate_left parent is_none node_a={}",(*node_a.as_ref()).value);
+            let fixed_head = self.fixed_head.unwrap();
+             
+            let node_a = (*fixed_head.as_ptr()).left.unwrap();
+
+            println!("rotate left node_a={}",(*node_a.as_ptr()).value);
+            let node_c = (*node_a.as_ptr()).right.unwrap();
+                    
+            (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red;// childNode принимает цвет своего parentNode
+            (*node_a.as_ptr()).is_red = true;// цвет parentNode всегда определяется как красный
+ 
+            if (*node_c.as_ref()).left.is_some(){
+                let mut node_e = (*node_c.as_ptr()).left;
+                if let Some(ref mut e) = &mut node_e{
+                    (*e.as_ptr()).parent = Some(node_a);
+                }
+                (*node_a.as_ptr()).right = node_e;
             }else{
-                println!("rotate_left parent is_none");
-               
-                let node_c = (*node_a.as_ptr()).right.unwrap();
-                let mut new_node_c = Node::new_black((*node_c.as_ptr()).value.clone()).unwrap();
-                let node_e = (*node_c.as_ptr()).left;
-                (*new_node_c.as_ptr()).right = (*node_c.as_ptr()).right;
-                if let Some(d) = (*new_node_c.as_ptr()).right{
-                    (*d.as_ptr()).parent = Some(new_node_c);
-                }
-
-                let new_node_a = Node::new_black((*node_a.as_ptr()).value.clone()).unwrap();
-                (*new_node_a.as_ptr()).is_red = (*node_a.as_ptr()).is_red;
-                (*new_node_a.as_ptr()).left = (*node_a.as_ptr()).left;
-                (*new_node_a.as_ptr()).right = (*node_c.as_ptr()).left;
-                (*new_node_c.as_ptr()).is_red = (*new_node_a.as_ptr()).is_red;// childNode принимает цвет своего parentNode
-                (*new_node_a.as_ptr()).is_red = true;// цвет parentNode всегда определяется как красный
-                if let Some(b) = (*new_node_a.as_ptr()).left{
-                    (*b.as_ptr()).parent = Some(new_node_a);
-                }
-                if let Some(e) = (*new_node_a.as_ptr()).right{
-                    (*e.as_ptr()).parent = Some(new_node_a);
-                }
-
-                // ************************* root
-                let _ = std::mem::replace(&mut node_a,   new_node_c);
-                (*new_node_a.as_ptr()).parent = Some(node_a);
-                (*node_a.as_ptr()).left = Some(new_node_a);
-                (*node_a.as_ptr()).parent = None;
-                
-                
-
-                #[cfg(not(feature = "test-rbt-snapshot"))]
-                (*node_a.as_ptr()).drop();
-                #[cfg(not(feature = "test-rbt-snapshot"))]
-                (*node_c.as_ptr()).drop();
-
-                return Some(node_a);
+                (*node_a.as_ptr()).right = None;
+            } 
+        
+            (*node_c.as_ptr()).left = Some(node_a); 
+             
+            (*node_a.as_ptr()).parent = Some(node_c);
+             
+            (*node_c.as_ptr()).parent = None;
+            (*fixed_head.as_ptr()).left = Some(node_c);
+            
+            return (*fixed_head.as_ptr()).left;
+             
+               /* 
+            let node_c = (*node_a.as_ptr()).right.unwrap();
+            let mut new_node_c = Node::new_black((*node_c.as_ptr()).value.clone()).unwrap();
+            let node_e = (*node_c.as_ptr()).left;
+            (*new_node_c.as_ptr()).right = (*node_c.as_ptr()).right;
+            if let Some(d) = (*new_node_c.as_ptr()).right{
+                (*d.as_ptr()).parent = Some(new_node_c);
             }
+
+            let new_node_a = Node::new_black((*node_a.as_ptr()).value.clone()).unwrap();
+            (*new_node_a.as_ptr()).is_red = (*node_a.as_ptr()).is_red;
+            (*new_node_a.as_ptr()).left = (*node_a.as_ptr()).left;
+            (*new_node_a.as_ptr()).right = (*node_c.as_ptr()).left;
+            (*new_node_c.as_ptr()).is_red = (*new_node_a.as_ptr()).is_red;// childNode принимает цвет своего parentNode
+            (*new_node_a.as_ptr()).is_red = true;// цвет parentNode всегда определяется как красный
+            if let Some(b) = (*new_node_a.as_ptr()).left{
+                (*b.as_ptr()).parent = Some(new_node_a);
+            }
+            if let Some(e) = (*new_node_a.as_ptr()).right{
+                (*e.as_ptr()).parent = Some(new_node_a);
+            }
+
+            // ************************* root
+            let _ = std::mem::replace(&mut self.root,   Some(new_node_c));
+            if let Some(mut root) = &mut self.root{
+                (*new_node_a.as_ptr()).parent = Some(root);
+                (*root.as_ptr()).left = Some(new_node_a);
+                (*root.as_ptr()).parent = None;
+            }
+             
+            #[cfg(not(feature = "test-rbt-snapshot"))]
+            (*node_a.as_ptr()).drop();
+            #[cfg(not(feature = "test-rbt-snapshot"))]
+            (*node_c.as_ptr()).drop();
+            */
+            
         }
 
         pub unsafe fn checking_connections(node: Link<T>)->bool{
@@ -1104,6 +1158,7 @@ mod llrb {
         }
 
         unsafe fn rotate_right_item(parent: NonNull<Node<T>>, node_a_from_left: bool) -> Link<T>{
+            println!("rotate_right_item parent={} node_a_from_left={}",(*parent.as_ptr()).value,node_a_from_left);
             let node_a = if node_a_from_left{
                 (*parent.as_ptr()).left.unwrap()
             }else{
@@ -1154,53 +1209,83 @@ mod llrb {
             E    D                D   C
 
         */
-        unsafe fn rotate_right(mut node_a: NonNull<Node<T>>) -> Link<T> {
-            if (*node_a.as_ptr()).parent.is_some(){
-                let parent = (*node_a.as_ptr()).parent.unwrap();
-                //println!("rotate_right parent is_some node_a={}",(*node_a.as_ref()).value);
-                let mut node_a_from_left = false;
-                if let Some(p_node_a) = (*parent.as_ptr()).left{
-                    if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
-                        node_a_from_left = true;
-                    } 
+        unsafe fn rotate_right_with_parent(mut node_a: NonNull<Node<T>>) -> Link<T> {
+            let parent = (*node_a.as_ptr()).parent.unwrap();
+            println!("rotate_right parent is_some node_a={}",(*node_a.as_ref()).value);
+            let mut node_a_from_left = false;
+            if let Some(p_node_a) = (*parent.as_ptr()).left{
+                if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
+                    node_a_from_left = true;
                 } 
-                return Tree::rotate_right_item( parent, node_a_from_left);    
-            }else{
-                //println!("rotate_right parent is_none node={}",(*node_a.as_ref()).value);
-                let mut new_node_a = Node::new_black((*node_a.as_ptr()).value.clone());
-                let mut node_b = (*node_a.as_ptr()).left.unwrap();
-
-                if let Some(ref mut n_a) = new_node_a{
-                    
-                    (*n_a.as_mut()).right = (*node_a.as_ptr()).right;
-                    (*n_a.as_mut()).is_red = true;
- 
-                    if (*node_b.as_ref()).right.is_some(){
-                        let mut node_d = (*node_b.as_mut()).right.unwrap();
-                        (*node_d.as_mut()).parent = Some(*n_a);
-                        (*n_a.as_mut()).left = Some(node_d);
-                    }else{
-                        (*n_a.as_mut()).left = None;
-                    }
-
-                    let _ = std::mem::replace(&mut node_a,   node_b);
-
-                    //***************************** root
-                        (*n_a.as_mut()).parent = Some(node_a);
-                        (*node_a.as_mut()).right = Some(*n_a);
-                        (*node_a.as_mut()).parent = None;
-                        (*node_a.as_mut()).is_red = false;
-
-                        return Some(node_a);
-                    
-                }
-                None
-            }  
-             
+            } 
+            return Tree::rotate_right_item( parent, node_a_from_left);    
         }
  
+        unsafe fn rotate_right_without_parent(&mut self, mut node_a: NonNull<Node<T>>) -> Link<T> {
+            println!("rotate_right parent is_none node_a={}",(*node_a.as_ref()).value);
+            let fixed_head = self.fixed_head.unwrap();
+
+            let node_a = (*fixed_head.as_ptr()).left.unwrap();
+              
+            let node_b = (*node_a.as_ptr()).left.unwrap();
+              
+            (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red;// childNode принимает цвет своего parentNode
+            (*node_a.as_ptr()).is_red = true;// цвет parentNode всегда определяется как красный
+            
+            if (*node_b.as_ref()).right.is_some(){
+                let mut node_d = (*node_b.as_ptr()).right;
+                if let Some(ref mut d) = &mut node_d{
+                    (*d.as_ptr()).parent = Some(node_a);
+                }
+                (*node_a.as_ptr()).left = node_d;
+                
+            }else{
+                (*node_a.as_ptr()).left = None;
+            } 
+            (*node_b.as_ptr()).right = Some(node_a); 
+                
+            (*node_a.as_ptr()).parent = Some(node_b);
+            
+            (*node_b.as_ptr()).parent = None;
+            (*fixed_head.as_ptr()).left = Some(node_b);
+            return (*fixed_head.as_ptr()).left;
+             
+
+            /* 
+            let mut new_node_a = Node::new_black((*node_a.as_ptr()).value.clone());
+            let mut node_b = (*node_a.as_ptr()).left.unwrap();
+
+            if let Some(ref mut n_a) = new_node_a{
+                
+                (*n_a.as_mut()).right = (*node_a.as_ptr()).right;
+                (*n_a.as_mut()).is_red = true;
+
+                if (*node_b.as_ref()).right.is_some(){
+                    let mut node_d = (*node_b.as_mut()).right.unwrap();
+                    (*node_d.as_mut()).parent = Some(*n_a);
+                    (*n_a.as_mut()).left = Some(node_d);
+                }else{
+                    (*n_a.as_mut()).left = None;
+                }
+
+                //  ***************************** root
+                let _ = std::mem::replace(&mut self.root,   Some(node_b));
+                if let Some(root) = &mut self.root{
+                    (*n_a.as_ptr()).parent = Some(*root);
+                    (*root.as_ptr()).right = Some(*n_a);
+                    (*root.as_ptr()).parent = None;
+                    (*root.as_ptr()).is_red = false;
+
+                    //return Some(node_a);                        
+                }    
+                
+            }*/
+           
+        }
+
+
         unsafe fn flip_colors(mut node: NonNull<Node<T>>){
-            //println!("FLIP COLORS node={}",(*node.as_ref()).value);
+            println!("flip colors node={}",(*node.as_ref()).value);
             if (*node.as_ref()).left.is_some() && (*node.as_ref()).right.is_some(){
                 if let Some(ref mut left) = (*node.as_mut()).left{
                     (*left.as_mut()).is_red = false;
@@ -1215,12 +1300,12 @@ mod llrb {
                 }
             }
 
-            if (*node.as_ptr()).parent.is_some(){
+            /*if (*node.as_ptr()).parent.is_some(){
                 Tree::check((*node.as_ptr()).parent.unwrap());  
-            }
+            }*/
         }
 
-        unsafe fn operation_put(node: NonNull<Node<T>>) -> OperationPut{
+        unsafe fn check_balancing(node: NonNull<Node<T>>) -> OperationPut{
             if (*node.as_ref()).right.is_some(){
                 let r = (*node.as_ref()).right.unwrap();
                 if (*node.as_ref()).left.is_some(){
@@ -1242,30 +1327,194 @@ mod llrb {
                     return OperationPut::Right;
                 }
             }
-            return OperationPut::Skip;
+            return OperationPut::Nothing;
         }
 
-        unsafe fn put_node(parent: NonNull<Node<T>>, elem: T) -> bool {
+        pub fn put(&mut self, value: T) -> bool {
+            unsafe{ 
+                if let Some(fixed_head) = self.fixed_head{
+                    let parent = Tree::find_put_parent_candidate( self.get_root(), &value);
+                    if parent.is_some(){
+                        let parent = parent.unwrap();
+                        if Tree::attach_node( parent, value){
+                            self.put_balancing(parent);
+                        }
+                    }else{
+                        return false;
+                    }
+                }else{
+                    self.fixed_head = Node::new_fixed_head(value);   
+                }
+                self.count += 1;
+                true 
+            }
+        }
+
+        unsafe fn put_balancing(&mut self, next: NonNull<Node<T>>) {
+            if let Some(fixed_head) = self.fixed_head{
+                let root = (*fixed_head.as_ptr()).left.unwrap();
+
+                let mut next = next;
+            
+                loop {
+                    println!("NEXT={}",(*next.as_ptr()).value);
+                    //println!("{}",self.display());
+                    //Tree::checking_connections( Some(root));
+                    
+                    match Tree::check_balancing( next){
+                        OperationPut::Left => {
+                            println!("ROTATE LEFT");
+                            if (*next.as_ptr()).parent.is_some(){ 
+                                if let Some(n) = Tree::rotate_left_with_parent(next){
+                                    next = n;
+                                    
+                                } else{
+                                    unimplemented!()
+                                } 
+                            }else{
+                                // next is root
+                                if let Some(n) = self.rotate_left_without_parent(next){
+                                    next = n;
+                                }
+                                 
+                            }
+                        },
+                        OperationPut::Right => {
+                            println!("ROTATE RIGHT");
+                            if (*next.as_ptr()).parent.is_some(){
+                                let node_a = (*next.as_ptr()).parent.unwrap();
+                                if (*node_a.as_ptr()).parent.is_some(){
+                                    if let Some(n) = Tree::rotate_right_with_parent( node_a){
+                                        next = n;
+
+                                        print!("NEXT={} ",(*next.as_ptr()).value);
+                                        if let Some(right) = (*next.as_ptr()).right {
+                                            print!("NEXT right={} ",(*right.as_ptr()).value);
+                                        }
+                                        if let Some(left) = (*next.as_ptr()).left {
+                                            print!("NEXT Left={} ",(*left.as_ptr()).value);
+                                        }
+                                        if let Some(p) = (*next.as_ptr()).parent {
+                                            print!("NEXT parent={}  ",(*p.as_ptr()).value);
+                                            if let Some(p_right) = (*p.as_ptr()).right {
+                                                print!("NEXT parent_right={}  ",(*p_right.as_ptr()).value);
+                                            }
+                                            if let Some(p_left) = (*p.as_ptr()).left {
+                                                print!("NEXT parent_left={}  ",(*p_left.as_ptr()).value);
+                                            }
+                                        }
+                                        print!("\n");
+                                        
+                                    } else{
+                                        unimplemented!()
+                                    } 
+                                }else{
+                                    // node_a is root
+                                    if let Some(n) = self.rotate_right_without_parent(node_a){
+                                        next = n;
+                                    }
+                                    
+                                }
+                            }else{
+                                unimplemented!()
+                                // next is root
+                                /*if let Some(n) = self.rotate_right_without_parent(next){
+                                    next = n;
+                                } */
+                            }
+                        },
+                        OperationPut::FlipColors =>{
+                            println!("FLIP COLORS");
+                            Tree::flip_colors(next);
+                            if (*next.as_ptr()).parent.is_some(){
+                                next = (*next.as_ptr()).parent.unwrap();
+                            }else{
+                                break;
+                            }
+                        },
+                        OperationPut::Nothing =>{
+                            println!("NOTHING");
+                           // break;
+
+                            if (*next.as_ptr()).parent.is_some(){
+                                next = (*next.as_ptr()).parent.unwrap();
+                            }else{
+                                break;
+                            }
+                        }
+                    }                                    
+                }
+                               
+            }
+
+            
+            
+
+            
+        }
+        unsafe fn find_put_parent_candidate(parent: Link<T>, elem: &T) -> Link<T>{
+            if let Some(parent) = parent{
+                match elem.cmp(&(*parent.as_ref()).value) {
+                    Ordering::Equal =>{
+                        return None;
+                    },
+                    Ordering::Less =>{
+                        if (*parent.as_ptr()).left.is_some() {
+                            return Tree::find_put_parent_candidate((*parent.as_ptr()).left, elem);
+                        }else{
+                            return Some(parent);
+                        }
+                    },
+                    Ordering::Greater => {
+                        if (*parent.as_ptr()).right.is_some() {
+                            return Tree::find_put_parent_candidate((*parent.as_ptr()).right, elem);
+                        }else{
+                            return Some(parent);
+                        }
+                    }
+                }
+            }else{
+                return parent;
+            }
+        }
+        
+        unsafe fn attach_node(parent: NonNull<Node<T>>, elem: T) -> bool {
+            match elem.cmp(&(*parent.as_ref()).value) {
+                Ordering::Equal =>{
+                    return false;
+                },
+                Ordering::Less =>{
+                    println!("--NEW {elem}-- Less={elem} < {p}",elem=elem, p=(*parent.as_ref()).value);
+                    (*parent.as_ptr()).left = Node::new_red(elem, parent);
+                    return true;
+                },
+                Ordering::Greater => {
+                    println!("--NEW {elem}-- Greater={elem} > {p}",elem=elem, p=(*parent.as_ref()).value);
+                    (*parent.as_ptr()).right = Node::new_red(elem, parent);
+                    return true;
+                }
+            }
+        }
+
+        /*unsafe fn put_node(parent: NonNull<Node<T>>, elem: T) -> Link<T> {
               
             match elem.cmp(&(*parent.as_ref()).value) {
                 Ordering::Equal =>{
                     return false;
                 },
                 Ordering::Less =>{
-                    if (*parent.as_ptr()).left.is_some() {
-                        return Tree::put_node((*parent.as_ptr()).left.unwrap(), elem);
-                    } else {
-                        println!("NEW Less={} < {}",elem, (*parent.as_ref()).value);
-                        (*parent.as_ptr()).left = Node::new_red(elem, parent);
-                        if (*parent.as_ref()).is_red && (*parent.as_ptr()).parent.is_some(){  
-                            let node_a = (*parent.as_ptr()).parent.unwrap();
-                            println!("ROTATE RIGHT");
-                            if let Some(next) = Tree::rotate_right( node_a){
-                                Tree::check(next);
-                            } 
-                        }
-                        return true;  
+                    
+                    println!("NEW Less={} < {}",elem, (*parent.as_ref()).value);
+                    (*parent.as_ptr()).left = Node::new_red(elem, parent);
+                    if (*parent.as_ref()).is_red && (*parent.as_ptr()).parent.is_some(){  
+                        let node_a = (*parent.as_ptr()).parent.unwrap();
+                        println!("ROTATE RIGHT");
+                        if let Some(next) = Tree::rotate_right( node_a){
+                            Tree::check(next);
+                        } 
                     }
+                          
+                    
                 },
                 Ordering::Greater => {
                     if (*parent.as_ptr()).right.is_some() {
@@ -1289,11 +1538,11 @@ mod llrb {
                     }
                 }
             }
-        }
+        }*/
 
-        unsafe fn check(node: NonNull<Node<T>>){
+        /*unsafe fn check(node: NonNull<Node<T>>){
             println!("check node={}",(*node.as_ptr()).value);  
-            match Tree::operation_put(node){
+            match Tree::check_balancing(node){
                 OperationPut::Left => {
                     println!("check rotate_left");
                     if let Some(next) = Tree::rotate_left(node){
@@ -1317,9 +1566,9 @@ mod llrb {
                         Tree::check(parent);
                     }                 
                 },
-                OperationPut::Skip => {}
+                OperationPut::Nothing => {}
             }
-        }
+        }*/
 
         #[cfg(feature = "test-rbt-snapshot")]
         pub unsafe fn test_left_rotation_with_parent(&mut self){
@@ -1335,7 +1584,7 @@ mod llrb {
                        /   \               /   \
                       E(7)  D(9)        B(5)   E(7)
             */
-             
+             /* 
             // Initialization
             let mut tree: Tree<i32> = Tree::new();
             tree.root = Node::new_black(2);
@@ -1394,8 +1643,9 @@ mod llrb {
                     assert_eq!((*node_e_parent.as_ptr()).value, 6,">>>10");
                 }
             }
-
             tree.root = None;
+*/
+            
         }
    
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1411,7 +1661,7 @@ mod llrb {
                           /    \             /   \
                         E(7)   D(9)        B(5)   E(7)
             */
-
+/* 
             // Initialization
             let mut tree: Tree<i32> = Tree::new();
             tree.root = Node::new_black(6);
@@ -1457,9 +1707,10 @@ mod llrb {
                     assert_eq!((*node_e_parent.as_ptr()).value, 6);
                 }
             }
+
             tree.root = None;
+            */
         }
-        
                 
         #[cfg(feature = "test-rbt-snapshot")]
         pub unsafe fn test_right_rotation_with_parent_2(&mut self){
@@ -1478,7 +1729,7 @@ mod llrb {
              E(7)                                 
             
             */
-             
+            /* 
             // Initialization
             let mut tree = Tree::new();
             tree.root = Node::new_black(575);// P
@@ -1500,7 +1751,7 @@ mod llrb {
             }
             
             // Operation
-            /*if let Some(ref mut root) = &mut tree.root{
+            if let Some(ref mut root) = &mut tree.root{
                 if let Some(ref mut node) = &mut (*root.as_mut()).left{
                     if let Some(ref mut node_a) = &mut (*node.as_mut()).left{
                         
@@ -1509,27 +1760,25 @@ mod llrb {
                         }
                     } 
                 }
-            }*/
+            } 
 
-            tree.put(575);
-            tree.put(396);
-            tree.put(139);
-            tree.put(792);
-            tree.put(546);
-            tree.put(73);
-            //println!(">>>>{}",tree.display());
-            tree.put(7);
+            //tree.put(575);
+            //tree.put(396);
+            //tree.put(139);
+            //tree.put(792);
+            //tree.put(546);
+            //tree.put(73);
+           
+            //tree.put(7);
             unsafe{ Tree::checking_connections(tree.root);} 
 
             println!("{}",tree.display());
             // Validation
-            /*if let Some(ref mut root) = &mut tree.root{
-              
-            }*/
+          
             tree.root = None;
+            */
         }
            
-
         #[cfg(feature = "test-rbt-snapshot")]
         pub unsafe fn test_right_rotation_with_parent(&mut self){
             /*
@@ -1545,7 +1794,7 @@ mod llrb {
             E(15)   D(25)                    D(25)  C(30)
             
             */
-             
+             /* 
             // Initialization
             let mut tree = Tree::new();
             tree.root = Node::new_black(5);// P
@@ -1603,6 +1852,7 @@ mod llrb {
                 }
             }
             tree.root = None;
+            */
         }
            
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1620,7 +1870,7 @@ mod llrb {
             E(15)   D(25)                   D(25)  C(30)
             
             */
-            
+            /* 
             // Initialization
             let mut tree  = Tree::new();
             tree.root = Node::new_black(26);// A
@@ -1677,6 +1927,7 @@ mod llrb {
                 }
             }
             tree.root = None;
+            */
         }
           
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1693,7 +1944,7 @@ mod llrb {
              E   C             C
 
             */           
-
+            /*
             // Initialization
             let mut tree  = Tree::new();
             tree.root = Node::new_black(449);
@@ -1757,6 +2008,7 @@ mod llrb {
 
             assert!(tree.is_a_valid_red_black_tree());
             tree.root = None;
+            */
         }
 
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1774,7 +2026,7 @@ mod llrb {
                //
               D 
             */ 
-
+            /* 
             // Initialization
             let mut tree  = Tree::new();
             tree.root = Node::new_black(486);
@@ -1836,12 +2088,25 @@ mod llrb {
             }
 
             tree.root = None;
- 
+            */
         }
 
     }
 
-    impl<T: Display> Node<T> {
+    impl<T: Default + Display> Node<T> {
+        pub fn new_fixed_head(value: T) -> Link<T> {
+            unsafe {
+                let fixed_head = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
+                    left: None,
+                    right: None,
+                    parent: None,
+                    is_red: false,
+                    value: T::default(),
+                })));
+                (*fixed_head.as_ptr()).left = Node::new_black(value);// обратной ссылки на parent нет
+                Some(fixed_head)
+            }
+        }
         pub fn new_black(value: T) -> Link<T> {
             unsafe {
                 let new = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
@@ -1885,10 +2150,12 @@ mod llrb {
     }
 
     #[cfg(not(feature = "test-rbt-snapshot"))]
-    impl<T: Ord + PartialEq + PartialOrd + Display + Clone> Drop for Tree<T> {
+    impl<T: Ord + PartialEq + PartialOrd + Default + Display + Clone> Drop for Tree<T> {
         fn drop(&mut self) {
             unsafe {
-                self.remove_tree(self.root.unwrap());
+                let fixed_head = self.fixed_head.unwrap();
+                self.remove_tree((*fixed_head.as_ptr()).left.unwrap());
+                self.fixed_head = None;
             }
         }
     }
@@ -1972,17 +2239,22 @@ mod tests {
      
         let mut tree: Tree<i32> = Tree::new();
         let nodes = vec![ 24,5 ,1  ,15   ,3 ,8     ,13,16];// [24, 5, 6] и [24, 5, 1]
-        let nodes = vec![480,978,379,784,398,71,695,23,97,309,312,449,958,992,220,95,257,869,959,450,258,315,783,731,914,
+        let nodes = vec![480,978,379 ,784,3000 ,695 ,23,97,309,312,449,958,992,220,95,257,869,959,450,258,315,783,731,914,
         880,984,734,570,801,908,181,466,238,916,77,801,867,382,943,603,65,545,200,759,158,987,821,630,537,
         704,149,617,498,261,160,192,760,417,939,757,858,376,885,336,764,443,155,983,586,957,375,
         893,707,255,811,86,370,384,177,834,177,834,313,209,623,176,875,748,949,529,932,369,385,
         419,222,719,342,68,156,314,343,262,467,499,604,732,758,765,812,859,876];
         //let nodes = 0..=44;
-        for i in nodes{ tree.put(i);}
+        //let nodes = vec![4,9,3,2,1];
+        for i in nodes{
+             tree.put(i);
+             //unsafe{ Tree::checking_connections(tree.get_root());} 
+             assert!(tree.is_a_valid_red_black_tree());
+        }
          
         println!("After Test:\n{}",tree.display());
-        unsafe{ Tree::checking_connections(tree.root);} 
-        assert!(true);
+        unsafe{ Tree::checking_connections(tree.get_root());} 
+        assert!(tree.is_a_valid_red_black_tree());
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_rotate_right_success -- --nocapture
@@ -1993,7 +2265,7 @@ mod tests {
        for i in nodes{ tree.put(i);}
         
        println!("After Test:\n{}",tree.display());
-       unsafe{ Tree::checking_connections(tree.root);} 
+       unsafe{ Tree::checking_connections(tree.get_root());} 
        assert!(tree.is_a_valid_red_black_tree());
     }
 
@@ -2260,7 +2532,7 @@ mod tests {
         //println!("{}",tree.display());
     }
 
-    
+     
     // https://rflinux.blogspot.com/2011/10/red-black-trees.html
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_2_up_to_down_success -- --nocapture
     #[test]
@@ -2273,11 +2545,11 @@ mod tests {
         for i in nodes{ tree.put(i);}
             
         //println!("{}",tree.display());
-        unsafe{Tree::checking_connections(tree.root);} 
+        unsafe{Tree::checking_connections(tree.get_root());} 
 
         //tree.remove(6);
         //println!("{}",tree.display());
-        // unsafe{Tree::checking_connections(tree.root);} 
+        // unsafe{Tree::checking_connections(tree.get_root());} 
     }
     
 
