@@ -1,11 +1,9 @@
-
 #![allow(dead_code)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
 use llrb::{Tree,Node};
 mod llrb {
-
     use std::cmp::Ordering;
     use std::fmt::{self, Debug, Display};
     use std::hash::{Hash, Hasher};
@@ -42,9 +40,9 @@ mod llrb {
         BlackLeaf,
         NodeWithChildren,
         BlackNodeWithRedLeaf,
-        
         Unimplemented
     }
+
     enum OperationRemoveBlackLeaf{
         LeftRedABlackBRedCleaf,// 2.1.1.1
         RightRedABlackBRedCleaf,// 2.1.1.2
@@ -52,7 +50,6 @@ mod llrb {
         RightRedABlackBleaf,// 2.1.2.2
         BlackARedBWithBlackChildrenLeaf,//2.2.4
         BlackARedBWithBlackChildrenRightHaveRedLeaf,//2.2.1
-        
         BlackALeftBlackBRedDleaf,//2.3.1.1
         BlackARightBlackBRedDleaf,//2.3.1.2
         BlackALeftBlackBleaf,//2.3.2.1
@@ -90,6 +87,7 @@ mod llrb {
                 None
             }
         }
+        
         // https://youtu.be/a9EwBVLQ364?list=PL79T_6pcZAxwN-q69gAnSle0J_IliNawo&t=613
         // https://youtu.be/OAkmHIR9YkY?t=1096
         // https://www.youtube.com/watch?v=T70nn4EyTrs
@@ -1298,11 +1296,11 @@ mod llrb {
                        /   \               /   \
                       E(7)  D(9)        B(5)   E(7)
             */
-             /* 
+             
             // Initialization
             let mut tree: Tree<i32> = Tree::new();
-            tree.root = Node::new_black(2);
-            if let Some(ref mut root) = &mut tree.root{
+            tree.put(2);
+            if let Some(ref mut root) = &mut tree.get_root(){
               
                 (*root.as_mut()).right = Node::new_black_with_parent(6, *root);// A
                 if let Some(ref mut node_a) = &mut (*root.as_mut()).right{
@@ -1318,14 +1316,14 @@ mod llrb {
             }
 
             // Operation
-            if let Some(root) = tree.root{
+            if let Some(root) = tree.get_root(){
                 if let Some(node_a) =  (*root.as_ptr()).right{
-                    Tree::check(node_a);
+                    tree.put_balancing(node_a);
                 }
             }
             
             // Validation
-            if let Some(ref mut root) = &mut tree.root{
+            if let Some(ref mut root) = &mut tree.get_root(){
                 {// C
                     let node_c = (*root.as_ptr()).right.unwrap();
                     assert_eq!((*node_c.as_ptr()).value, 8);
@@ -1357,9 +1355,6 @@ mod llrb {
                     assert_eq!((*node_e_parent.as_ptr()).value, 6,">>>10");
                 }
             }
-            tree.root = None;
-*/
-            
         }
    
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1375,11 +1370,11 @@ mod llrb {
                           /    \             /   \
                         E(7)   D(9)        B(5)   E(7)
             */
-/* 
+
             // Initialization
             let mut tree: Tree<i32> = Tree::new();
-            tree.root = Node::new_black(6);
-            if let Some(ref mut root) = &mut tree.root{
+            tree.put(6);
+            if let Some(ref mut root) = &mut tree.get_root(){
                 (*root.as_mut()).left = Node::new_black_with_parent(5, *root);// B
                 (*root.as_mut()).right = Node::new_red(8, *root);// C
                     
@@ -1390,10 +1385,10 @@ mod llrb {
             }
 
             // Operation
-            Tree::check( tree.root.unwrap());  
+            tree.put_balancing( tree.get_root().unwrap());  
             
             // Validation
-            if let Some(ref mut root) = &mut tree.root{
+            if let Some(ref mut root) = &mut tree.get_root(){
                 {
                     assert_eq!((*root.as_ptr()).is_red, false);
                     assert_eq!((*root.as_ptr()).parent, None);
@@ -1421,9 +1416,6 @@ mod llrb {
                     assert_eq!((*node_e_parent.as_ptr()).value, 6);
                 }
             }
-
-            tree.root = None;
-            */
         }
                 
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1443,11 +1435,11 @@ mod llrb {
              E(7)                                 
             
             */
-            /* 
+            
             // Initialization
             let mut tree = Tree::new();
-            tree.root = Node::new_black(575);// P
-            if let Some(ref mut root) = &mut tree.root{
+            tree.put(575);// P
+            if let Some(ref mut root) = &mut tree.get_root(){
                 (*root.as_mut()).left = Node::new_red(396, *root); 
                 //(*root.as_mut()).right = Node::new_black_with_parent(792, *root); 
                 
@@ -1465,32 +1457,19 @@ mod llrb {
             }
             
             // Operation
-            if let Some(ref mut root) = &mut tree.root{
+            if let Some(ref mut root) = &mut tree.get_root(){
                 if let Some(ref mut node) = &mut (*root.as_mut()).left{
                     if let Some(ref mut node_a) = &mut (*node.as_mut()).left{
                         
-                        if let Some(ref mut node) = tree.rotate_right(*node_a){
-                            tree.check(node);
+                        if let Some(node) = Tree::rotate_right_with_parent(*node_a){
+                            tree.put_balancing(node);
                         }
                     } 
                 }
             } 
 
-            //tree.put(575);
-            //tree.put(396);
-            //tree.put(139);
-            //tree.put(792);
-            //tree.put(546);
-            //tree.put(73);
-           
-            //tree.put(7);
-            unsafe{ Tree::checking_connections(tree.root);} 
-
-            println!("{}",tree.display());
             // Validation
-          
-            tree.root = None;
-            */
+            unsafe{ Tree::helper_checking_connections(tree.get_root());} 
         }
            
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1508,11 +1487,11 @@ mod llrb {
             E(15)   D(25)                    D(25)  C(30)
             
             */
-             /* 
+             
             // Initialization
             let mut tree = Tree::new();
-            tree.root = Node::new_black(5);// P
-            if let Some(ref mut root) = &mut tree.root{
+            tree.put(5);// P
+            if let Some(ref mut root) = &mut tree.get_root(){
                 (*root.as_mut()).right = Node::new_black_with_parent(26, *root);// A
                 
                 if let Some(ref mut node_a) = &mut (*root.as_mut()).right{
@@ -1527,14 +1506,14 @@ mod llrb {
             }
             
             // Operation
-            if let Some(ref mut root) = &mut tree.root{
-                if let Some(ref mut node_a) = &mut (*root.as_mut()).right{
-                    Tree::rotate_right( *node_a);
+            if let Some(ref mut root) = &mut tree.get_root(){
+                if let Some(node_a) = &mut (*root.as_mut()).right{
+                    Tree::rotate_right_with_parent( *node_a);
                 }
             }
              
             // Validation
-            if let Some(ref mut root) = &mut tree.root{
+            if let Some(ref mut root) = &mut tree.get_root(){
                 { // B A ----------------------------------------------------------
                     let node_b = (*root.as_ptr()).right.unwrap();
                     //assert_eq!((*node_b.as_ptr()).is_red, true);
@@ -1565,8 +1544,6 @@ mod llrb {
                     assert_eq!((*node_d_parent.as_ptr()).value, 26); 
                 }
             }
-            tree.root = None;
-            */
         }
            
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1584,11 +1561,11 @@ mod llrb {
             E(15)   D(25)                   D(25)  C(30)
             
             */
-            /* 
+            
             // Initialization
             let mut tree  = Tree::new();
-            tree.root = Node::new_black(26);// A
-            if let Some(ref mut root) = &mut tree.root{
+            tree.put(26);// A
+            if let Some(ref mut root) = &mut tree.get_root(){
                 (*root.as_mut()).left = Node::new_red(24, *root);// B
                 (*root.as_mut()).right = Node::new_black_with_parent(30, *root);// C 
                 
@@ -1599,10 +1576,10 @@ mod llrb {
             }
              
             // Operation
-            if let Some(root) = tree.root{
+            if let Some(root) = tree.get_root(){
                 if let Some(parent) = (*root.as_ptr()).left{
                     if let Some(node_a) = (*parent.as_ptr()).parent{
-                        if let Some(n) = Tree::rotate_right(node_a){
+                        if let Some(n) = tree.rotate_right_without_parent(){
                             Tree::flip_colors(n);
                         }
                     }
@@ -1611,7 +1588,7 @@ mod llrb {
             // self.rotate_right(&mut tree.root.unwrap());
              
             // Validation
-            if let Some(ref mut root_b) = &mut tree.root{
+            if let Some(ref mut root_b) = &mut tree.get_root(){
                 {
                     assert_eq!((*root_b.as_ptr()).parent, None);
                     assert_eq!((*root_b.as_ptr()).is_red, false);
@@ -1640,8 +1617,6 @@ mod llrb {
                     assert_eq!((*node_d_parent.as_ptr()).value, 26);
                 }
             }
-            tree.root = None;
-            */
         }
           
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1658,11 +1633,11 @@ mod llrb {
              E   C             C
 
             */           
-            /*
+            
             // Initialization
             let mut tree  = Tree::new();
-            tree.root = Node::new_black(449);
-            if let Some(ref mut root) = &mut tree.root{
+            tree.put(449);
+            if let Some(ref mut root) = &mut tree.get_root(){
                 (*root.as_mut()).left = Node::new_black_with_parent(331, *root);// A
                 (*root.as_mut()).right = Node::new_black_with_parent(755, *root);  
                 
@@ -1688,7 +1663,7 @@ mod llrb {
             // println!("{}",tree.display());
             
             // Validation
-            if let Some(ref mut root) = &mut tree.root{
+            if let Some(ref mut root) = &mut tree.get_root(){
                 assert_eq!((*root.as_ptr()).parent, None);
                 assert_eq!((*root.as_ptr()).is_red, false);
                 assert_eq!((*root.as_ptr()).value, 449);
@@ -1720,9 +1695,8 @@ mod llrb {
                 assert_eq!((*node_c_parent.as_ptr()).value, 331);
             }
 
-            assert!(tree.is_a_valid_red_black_tree());
-            tree.root = None;
-            */
+            assert!(tree.helper_is_a_valid_red_black_tree());
+           
         }
 
         #[cfg(feature = "test-rbt-snapshot")]
@@ -1740,11 +1714,11 @@ mod llrb {
                //
               D 
             */ 
-            /* 
+            
             // Initialization
             let mut tree  = Tree::new();
-            tree.root = Node::new_black(486);
-            if let Some(ref mut root) = &mut tree.root{
+            tree.put(486);
+            if let Some(ref mut root) = &mut tree.get_root(){
                 (*root.as_mut()).left = Node::new_black_with_parent(324, *root);// A
                 (*root.as_mut()).right = Node::new_black_with_parent(612, *root);  
                 
@@ -1766,7 +1740,7 @@ mod llrb {
             tree.remove(479);
 
             // Validation
-            if let Some(ref mut root) = &mut tree.root{
+            if let Some(ref mut root) = &mut tree.get_root(){
                 assert_eq!((*root.as_ptr()).parent, None);
                 assert_eq!((*root.as_ptr()).is_red, false);
                 assert_eq!((*root.as_ptr()).value, 486);
@@ -1799,10 +1773,7 @@ mod llrb {
                 assert_eq!((*node_d.as_ptr()).left, None);
                 let node_d_parent = (*node_d.as_ptr()).parent.unwrap();
                 assert_eq!((*node_d_parent.as_ptr()).value, 226); 
-            }
-
-            tree.root = None;
-            */
+            } 
         }
 
     }
@@ -2002,17 +1973,17 @@ mod tests {
         unsafe{
             let mut tree: Tree<i32> = Tree::new();
             tree.test_left_rotation_with_parent();
-
+            let mut tree: Tree<i32> = Tree::new();
             tree.test_left_rotation_without_parent();
-
+            let mut tree: Tree<i32> = Tree::new();
             tree.test_right_rotation_with_parent();
-
+            let mut tree: Tree<i32> = Tree::new();
             tree.test_right_rotation_without_parent();
-
+            let mut tree: Tree<i32> = Tree::new();
             tree.test_remove_black_2_2_2();
-
+            let mut tree: Tree<i32> = Tree::new();
             tree.test_remove_black_2_2_1();
-
+            let mut tree: Tree<i32> = Tree::new();
             tree.test_right_rotation_with_parent_2();
         }
     }
