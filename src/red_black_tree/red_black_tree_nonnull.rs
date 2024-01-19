@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
-//#![allow(unused_variables)]
 
 use llrb::{Node, Tree};
 mod llrb {
@@ -35,7 +34,7 @@ mod llrb {
         Nothing,
     }
 
-    enum OperationRemoveFourOptions {
+    enum OperationRemove {
         RedLeaf,
         BlackLeaf,
         NodeWithChildren,
@@ -84,9 +83,6 @@ mod llrb {
             }
         }
 
-        // https://youtu.be/a9EwBVLQ364?list=PL79T_6pcZAxwN-q69gAnSle0J_IliNawo&t=613
-        // https://youtu.be/OAkmHIR9YkY?t=1096
-        // https://www.youtube.com/watch?v=T70nn4EyTrs
         pub fn remove(&mut self, value: T) -> bool {
             unsafe {
                 let fixed_head = self.fixed_head.unwrap();
@@ -102,32 +98,32 @@ mod llrb {
             }
         }
 
-        unsafe fn operation_remove(&self, node_x: &NonNull<Node<T>>) -> OperationRemoveFourOptions {
+        unsafe fn operation_remove(&self, node_x: &NonNull<Node<T>>) -> OperationRemove {
             if (*node_x.as_ref()).is_red
                 && (*node_x.as_ref()).left.is_none()
                 && (*node_x.as_ref()).right.is_none()
             {
-                return OperationRemoveFourOptions::RedLeaf;
+                return OperationRemove::RedLeaf;
             }
             if (*node_x.as_ref()).is_red {
                 if (*node_x.as_ref()).left.is_some() && (*node_x.as_ref()).right.is_some() {
-                    return OperationRemoveFourOptions::NodeWithChildren;
+                    return OperationRemove::NodeWithChildren;
                 }
             }
             if !(*node_x.as_ref()).is_red {
                 if (*node_x.as_ref()).left.is_some() && (*node_x.as_ref()).right.is_some() {
-                    return OperationRemoveFourOptions::NodeWithChildren;
+                    return OperationRemove::NodeWithChildren;
                 } else if (*node_x.as_ref()).left.is_some() && (*node_x.as_ref()).right.is_none() {
                     if let Some(left) = (*node_x.as_ref()).left {
                         if (*left.as_ref()).is_red
                             && (*left.as_ref()).left.is_none()
                             && (*left.as_ref()).right.is_none()
                         {
-                            return OperationRemoveFourOptions::BlackNodeWithRedLeaf;
+                            return OperationRemove::BlackNodeWithRedLeaf;
                         }
                     }
                 } else if (*node_x.as_ref()).left.is_none() && (*node_x.as_ref()).right.is_none() {
-                    return OperationRemoveFourOptions::BlackLeaf;
+                    return OperationRemove::BlackLeaf;
                 }
             }
             panic!();
@@ -688,9 +684,6 @@ mod llrb {
         }
 
         /*
-            https://youtu.be/gCPtoK07yRA?t=3266
-            https://youtu.be/gCPtoK07yRA?t=4599
-
             2.3.2.1 remove black X
 
              P           P
@@ -779,10 +772,9 @@ mod llrb {
             }
         }
 
-        // https://www.youtube.com/watch?v=T70nn4EyTrs
         unsafe fn remove_node(&mut self, node: NonNull<Node<T>>) -> bool {
             match self.operation_remove(&node) {
-                OperationRemoveFourOptions::RedLeaf => {
+                OperationRemove::RedLeaf => {
                     /*
                       option 1.0.0
 
@@ -793,11 +785,11 @@ mod llrb {
                     */
                     return self.remove_leaf(node);
                 }
-                OperationRemoveFourOptions::BlackLeaf => {
+                OperationRemove::BlackLeaf => {
                     // option 2 black leaf
                     return self.remove_black_leaf(node);
                 }
-                OperationRemoveFourOptions::NodeWithChildren => {
+                OperationRemove::NodeWithChildren => {
                     /*
                       option 4.0.0
 
@@ -844,7 +836,7 @@ mod llrb {
                     }
                     return res;
                 }
-                OperationRemoveFourOptions::BlackNodeWithRedLeaf => {
+                OperationRemove::BlackNodeWithRedLeaf => {
                     /*
                      option 3.0.0
 
@@ -857,7 +849,7 @@ mod llrb {
                     std::mem::swap(&mut (*node.as_ptr()).value, &mut (*red_left.as_ptr()).value);
                     return self.remove_leaf(red_left);
                 }
-                OperationRemoveFourOptions::Unimplemented => {
+                OperationRemove::Unimplemented => {
                     panic!();
                 }
             }
@@ -977,7 +969,6 @@ mod llrb {
 
         // red-red violations, min black-height, max-black-height
         unsafe fn validate(
-            &self,
             node: &Link<T>,
             is_red: bool,
             black_height: usize,
@@ -989,8 +980,8 @@ mod llrb {
                         false => 1,
                         _ => 0,
                     };
-                let l = self.validate(&(*n.as_ref()).left, (*n.as_ref()).is_red, black_height);
-                let r = self.validate(&(*n.as_ref()).right, (*n.as_ref()).is_red, black_height);
+                let l = Tree::validate(&(*n.as_ref()).left, (*n.as_ref()).is_red, black_height);
+                let r = Tree::validate(&(*n.as_ref()).right, (*n.as_ref()).is_red, black_height);
                 (
                     red_red + l.0 + r.0,
                     std::cmp::min(l.1, r.1),
@@ -1005,7 +996,7 @@ mod llrb {
             if self.node_count() > 0 {
                 unsafe {
                     let fixed_head = self.fixed_head.unwrap();
-                    let result = self.validate(&(*fixed_head.as_ptr()).left, true, 0);
+                    let result = Tree::validate(&(*fixed_head.as_ptr()).left, true, 0);
                     let red_red = result.0;
                     let black_height_min = result.1;
                     let black_height_max = result.2;
@@ -1016,38 +1007,18 @@ mod llrb {
             false
         }
 
-        unsafe fn rotate_left_item(parent: NonNull<Node<T>>, node_a_from_left: bool) -> Link<T> {
-            let node_a = if node_a_from_left {
-                (*parent.as_ptr()).left.unwrap()
-            } else {
-                (*parent.as_ptr()).right.unwrap()
-            };
-            let node_c = (*node_a.as_ptr()).right.unwrap();
-            (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
-            (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
-            (*node_c.as_ptr()).parent = Some(parent);
-            if (*node_c.as_ref()).left.is_some() {
-                let mut node_e = (*node_c.as_ptr()).left;
-                if let Some(ref mut e) = &mut node_e {
-                    (*e.as_ptr()).parent = Some(node_a);
-                }
-                (*node_a.as_ptr()).right = node_e;
-            } else {
-                (*node_a.as_ptr()).right = None;
-            }
-            (*node_c.as_ptr()).left = Some(node_a);
-            (*node_a.as_ptr()).parent = Some(node_c);
-            if node_a_from_left {
-                (*parent.as_ptr()).left = Some(node_c);
-                return (*parent.as_ptr()).left;
-            } else {
-                (*parent.as_ptr()).right = Some(node_c);
-                return (*parent.as_ptr()).right;
-            }
-        }
-
         /*
-            Rotate left
+            Rotate left without parent
+            A is root
+
+               A                  C
+              / \\               //\
+             B    C     =>      A   D
+                 / \           / \
+                E   D         B   E
+
+       
+            Rotate left  with parent
 
                P                  P
                |                  |
@@ -1058,48 +1029,62 @@ mod llrb {
                 E   D         B   E
 
         */
-        unsafe fn rotate_left_with_parent(node_a: NonNull<Node<T>>) -> Link<T> {
-            let parent = (*node_a.as_ptr()).parent.unwrap();
-            let mut node_a_from_left = false;
-            if let Some(p_node_a) = (*parent.as_ptr()).left {
-                if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
-                    node_a_from_left = true;
+        unsafe fn rotate_left(&mut self, node_a: NonNull<Node<T>>) -> Link<T> {
+            if let Some(parent) = (*node_a.as_ptr()).parent{
+                let mut node_a_from_left = false;
+                if let Some(p_node_a) = (*parent.as_ptr()).left {
+                    if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
+                        node_a_from_left = true;
+                    }
                 }
-            }
-            return Tree::rotate_left_item(parent, node_a_from_left);
-        }
-
-        /*
-            Rotate left
-            A is root
-
-               A                  C
-              / \\               //\
-             B    C     =>      A   D
-                 / \           / \
-                E   D         B   E
-
-        */
-        unsafe fn rotate_left_without_parent(&mut self) -> Link<T> {
-            let fixed_head = self.fixed_head.unwrap();
-            let node_a = (*fixed_head.as_ptr()).left.unwrap();
-            let node_c = (*node_a.as_ptr()).right.unwrap();
-            (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
-            (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
-            if (*node_c.as_ref()).left.is_some() {
-                let mut node_e = (*node_c.as_ptr()).left;
-                if let Some(ref mut e) = &mut node_e {
-                    (*e.as_ptr()).parent = Some(node_a);
+                let node_a = if node_a_from_left {
+                    (*parent.as_ptr()).left.unwrap()
+                } else {
+                    (*parent.as_ptr()).right.unwrap()
+                };
+                let node_c = (*node_a.as_ptr()).right.unwrap();
+                (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
+                (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+                (*node_c.as_ptr()).parent = Some(parent);
+                if (*node_c.as_ref()).left.is_some() {
+                    let mut node_e = (*node_c.as_ptr()).left;
+                    if let Some(ref mut e) = &mut node_e {
+                        (*e.as_ptr()).parent = Some(node_a);
+                    }
+                    (*node_a.as_ptr()).right = node_e;
+                } else {
+                    (*node_a.as_ptr()).right = None;
                 }
-                (*node_a.as_ptr()).right = node_e;
-            } else {
-                (*node_a.as_ptr()).right = None;
+                (*node_c.as_ptr()).left = Some(node_a);
+                (*node_a.as_ptr()).parent = Some(node_c);
+                if node_a_from_left {
+                    (*parent.as_ptr()).left = Some(node_c);
+                    return (*parent.as_ptr()).left;
+                } else {
+                    (*parent.as_ptr()).right = Some(node_c);
+                    return (*parent.as_ptr()).right;
+                }
+            }else{
+                let fixed_head = self.fixed_head.unwrap();
+                let node_a = (*fixed_head.as_ptr()).left.unwrap();
+                let node_c = (*node_a.as_ptr()).right.unwrap();
+                (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
+                (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+                if (*node_c.as_ref()).left.is_some() {
+                    let mut node_e = (*node_c.as_ptr()).left;
+                    if let Some(ref mut e) = &mut node_e {
+                        (*e.as_ptr()).parent = Some(node_a);
+                    }
+                    (*node_a.as_ptr()).right = node_e;
+                } else {
+                    (*node_a.as_ptr()).right = None;
+                }
+                (*node_c.as_ptr()).left = Some(node_a);
+                (*node_a.as_ptr()).parent = Some(node_c);
+                (*node_c.as_ptr()).parent = None;
+                (*fixed_head.as_ptr()).left = Some(node_c);
+                return (*fixed_head.as_ptr()).left;
             }
-            (*node_c.as_ptr()).left = Some(node_a);
-            (*node_a.as_ptr()).parent = Some(node_c);
-            (*node_c.as_ptr()).parent = None;
-            (*fixed_head.as_ptr()).left = Some(node_c);
-            return (*fixed_head.as_ptr()).left;
         }
 
         pub unsafe fn helper_checking_connections(node: Link<T>) -> bool {
@@ -1170,38 +1155,18 @@ mod llrb {
             true
         }
 
-        unsafe fn rotate_right_item(parent: NonNull<Node<T>>, node_a_from_left: bool) -> Link<T> {
-            let node_a = if node_a_from_left {
-                (*parent.as_ptr()).left.unwrap()
-            } else {
-                (*parent.as_ptr()).right.unwrap()
-            };
-            let node_b = (*node_a.as_ptr()).left.unwrap();
-            (*node_b.as_ptr()).parent = Some(parent);
-            (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
-            (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
-            if (*node_b.as_ref()).right.is_some() {
-                let mut node_d = (*node_b.as_ptr()).right;
-                if let Some(ref mut d) = &mut node_d {
-                    (*d.as_ptr()).parent = Some(node_a);
-                }
-                (*node_a.as_ptr()).left = node_d;
-            } else {
-                (*node_a.as_ptr()).left = None;
-            }
-            (*node_b.as_ptr()).right = Some(node_a);
-            (*node_a.as_ptr()).parent = Some(node_b);
-            if node_a_from_left {
-                (*parent.as_ptr()).left = Some(node_b);
-                return (*parent.as_ptr()).left;
-            } else {
-                (*parent.as_ptr()).right = Some(node_b);
-                return (*parent.as_ptr()).right;
-            }
-        }
-
         /*
-            Rotate right
+            Rotate right without parent
+            A is root
+
+                 A               B
+               // \             / \\
+               B   C     =>    E    A
+             // \                  / \
+            E    D                D   C
+
+         
+            Rotate right with parent
 
                  P               P
                  |               |
@@ -1212,51 +1177,65 @@ mod llrb {
             E    D                D   C
 
         */
-        unsafe fn rotate_right_with_parent(node_a: NonNull<Node<T>>) -> Link<T> {
-            let parent = (*node_a.as_ptr()).parent.unwrap();
-            let mut node_a_from_left = false;
-            if let Some(p_node_a) = (*parent.as_ptr()).left {
-                if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
-                    node_a_from_left = true;
+        unsafe fn rotate_right(&mut self, node_a: NonNull<Node<T>>) -> Link<T> {
+            if let Some(parent) = (*node_a.as_ptr()).parent{
+                let mut node_a_from_left = false;
+                if let Some(p_node_a) = (*parent.as_ptr()).left {
+                    if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
+                        node_a_from_left = true;
+                    }
                 }
+                let node_a = if node_a_from_left {
+                    (*parent.as_ptr()).left.unwrap()
+                } else {
+                    (*parent.as_ptr()).right.unwrap()
+                };
+                let node_b = (*node_a.as_ptr()).left.unwrap();
+                (*node_b.as_ptr()).parent = Some(parent);
+                (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
+                (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+                if (*node_b.as_ref()).right.is_some() {
+                    let mut node_d = (*node_b.as_ptr()).right;
+                    if let Some(ref mut d) = &mut node_d {
+                        (*d.as_ptr()).parent = Some(node_a);
+                    }
+                    (*node_a.as_ptr()).left = node_d;
+                } else {
+                    (*node_a.as_ptr()).left = None;
+                }
+                (*node_b.as_ptr()).right = Some(node_a);
+                (*node_a.as_ptr()).parent = Some(node_b);
+                if node_a_from_left {
+                    (*parent.as_ptr()).left = Some(node_b);
+                    return (*parent.as_ptr()).left;
+                } else {
+                    (*parent.as_ptr()).right = Some(node_b);
+                    return (*parent.as_ptr()).right;
+                }
+            }else{
+                let fixed_head = self.fixed_head.unwrap();
+                let node_a = (*fixed_head.as_ptr()).left.unwrap();
+                let node_b = (*node_a.as_ptr()).left.unwrap();
+                (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
+                (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+                if (*node_b.as_ref()).right.is_some() {
+                    let mut node_d = (*node_b.as_ptr()).right;
+                    if let Some(ref mut d) = &mut node_d {
+                        (*d.as_ptr()).parent = Some(node_a);
+                    }
+                    (*node_a.as_ptr()).left = node_d;
+                } else {
+                    (*node_a.as_ptr()).left = None;
+                }
+                (*node_b.as_ptr()).right = Some(node_a);
+                (*node_a.as_ptr()).parent = Some(node_b);
+                (*node_b.as_ptr()).parent = None;
+                (*fixed_head.as_ptr()).left = Some(node_b);
+                return (*fixed_head.as_ptr()).left;
             }
-            return Tree::rotate_right_item(parent, node_a_from_left);
         }
 
-        /*
-            Rotate right
-            A is root
-
-                 A               B
-               // \             / \\
-               B   C     =>    E    A
-             // \                  / \
-            E    D                D   C
-
-        */
-        unsafe fn rotate_right_without_parent(&mut self) -> Link<T> {
-            let fixed_head = self.fixed_head.unwrap();
-            let node_a = (*fixed_head.as_ptr()).left.unwrap();
-            let node_b = (*node_a.as_ptr()).left.unwrap();
-            (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
-            (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
-            if (*node_b.as_ref()).right.is_some() {
-                let mut node_d = (*node_b.as_ptr()).right;
-                if let Some(ref mut d) = &mut node_d {
-                    (*d.as_ptr()).parent = Some(node_a);
-                }
-                (*node_a.as_ptr()).left = node_d;
-            } else {
-                (*node_a.as_ptr()).left = None;
-            }
-            (*node_b.as_ptr()).right = Some(node_a);
-            (*node_a.as_ptr()).parent = Some(node_b);
-            (*node_b.as_ptr()).parent = None;
-            (*fixed_head.as_ptr()).left = Some(node_b);
-            return (*fixed_head.as_ptr()).left;
-        }
-
-        unsafe fn flip_colors(mut node: NonNull<Node<T>>) {
+        unsafe fn flip_colors(&mut self, mut node: NonNull<Node<T>>) {
             if (*node.as_ref()).left.is_some() && (*node.as_ref()).right.is_some() {
                 if let Some(ref mut left) = (*node.as_mut()).left {
                     (*left.as_mut()).is_red = false;
@@ -1272,7 +1251,7 @@ mod llrb {
             }
         }
 
-        unsafe fn check_balancing(node: NonNull<Node<T>>) -> OperationPut {
+        unsafe fn check_put_balancing(&mut self, node: NonNull<Node<T>>) -> OperationPut {
             if (*node.as_ref()).right.is_some() {
                 let r = (*node.as_ref()).right.unwrap();
                 if (*node.as_ref()).left.is_some() {
@@ -1299,10 +1278,10 @@ mod llrb {
         pub fn put(&mut self, value: T) -> bool {
             unsafe {
                 if self.fixed_head.is_some() {
-                    let parent = Tree::find_put_parent_candidate(self.get_root(), &value);
+                    let parent = self.find_put_parent_candidate(self.get_root(), &value);
                     if parent.is_some() {
                         let parent = parent.unwrap();
-                        if Tree::attach_node(parent, value) {
+                        if self.attach_node(parent, value) {
                             self.put_balancing(parent);
                         }
                     } else {
@@ -1319,36 +1298,22 @@ mod llrb {
         unsafe fn put_balancing(&mut self, next: NonNull<Node<T>>) {
             let mut next = next;
             loop {
-                match Tree::check_balancing(next) {
+                match self.check_put_balancing(next) {
                     OperationPut::Left => {
-                        if (*next.as_ptr()).parent.is_some() {
-                            if let Some(n) = Tree::rotate_left_with_parent(next) {
-                                next = n;
-                            }
-                        } else {
-                            // next is root
-                            if let Some(n) = self.rotate_left_without_parent() {
-                                next = n;
-                            }
+                        if let Some(n) = self.rotate_left(next) {
+                            next = n;
                         }
                     }
                     OperationPut::Right => {
                         if (*next.as_ptr()).parent.is_some() {
                             let node_a = (*next.as_ptr()).parent.unwrap();
-                            if (*node_a.as_ptr()).parent.is_some() {
-                                if let Some(n) = Tree::rotate_right_with_parent(node_a) {
-                                    next = n;
-                                }
-                            } else {
-                                // node_a is root
-                                if let Some(n) = self.rotate_right_without_parent() {
-                                    next = n;
-                                }
+                            if let Some(n) = self.rotate_right(node_a) {
+                                next = n;
                             }
                         }
                     }
                     OperationPut::FlipColors => {
-                        Tree::flip_colors(next);
+                        self.flip_colors(next);
                         if (*next.as_ptr()).parent.is_some() {
                             next = (*next.as_ptr()).parent.unwrap();
                         } else {
@@ -1366,7 +1331,7 @@ mod llrb {
             } 
         }
 
-        unsafe fn find_put_parent_candidate(parent: Link<T>, elem: &T) -> Link<T> {
+        unsafe fn find_put_parent_candidate(&mut self, parent: Link<T>, elem: &T) -> Link<T> {
             if let Some(parent) = parent {
                 match elem.cmp(&(*parent.as_ref()).value) {
                     Ordering::Equal => {
@@ -1374,14 +1339,14 @@ mod llrb {
                     }
                     Ordering::Less => {
                         if (*parent.as_ptr()).left.is_some() {
-                            return Tree::find_put_parent_candidate((*parent.as_ptr()).left, elem);
+                            return self.find_put_parent_candidate((*parent.as_ptr()).left, elem);
                         } else {
                             return Some(parent);
                         }
                     }
                     Ordering::Greater => {
                         if (*parent.as_ptr()).right.is_some() {
-                            return Tree::find_put_parent_candidate((*parent.as_ptr()).right, elem);
+                            return self.find_put_parent_candidate((*parent.as_ptr()).right, elem);
                         } else {
                             return Some(parent);
                         }
@@ -1392,7 +1357,7 @@ mod llrb {
             }
         }
 
-        unsafe fn attach_node(parent: NonNull<Node<T>>, elem: T) -> bool {
+        unsafe fn attach_node(&mut self, parent: NonNull<Node<T>>, elem: T) -> bool {
             match elem.cmp(&(*parent.as_ref()).value) {
                 Ordering::Equal => {
                     return false;
@@ -1464,7 +1429,7 @@ mod llrb {
 
     impl<T: Display> Drop for Node<T> {
         fn drop(&mut self) {
-            //println!("Drop Node={}", self.value);
+            println!("Drop Node={}", self.value);
         }
     }
 
@@ -1550,7 +1515,7 @@ mod llrb {
 }
 
 /// $ cargo test red_black_tree_nonnull -- --nocapture
-/// $ cargo test red_black_tree_nonnull --features test-rbt-snapshot -- --nocapture
+/// $ cargo test red_black_tree_nonnull --features pre-order -- --nocapture
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1559,7 +1524,6 @@ mod tests {
     #[test]
     fn test_success() {
         let mut tree: Tree<i32> = Tree::new();
-        let nodes = vec![24, 5, 1, 15, 3, 8, 13, 16]; // [24, 5, 6] и [24, 5, 1]
         let nodes = vec![
             480, 978, 379, 784, 999, 695, 23, 97, 309, 312, 449, 958, 992, 220, 95, 257, 869, 959,
             450, 258, 315, 783, 731, 914, 880, 984, 734, 570, 801, 908, 181, 466, 238, 916, 77,
@@ -1569,15 +1533,11 @@ mod tests {
             875, 748, 949, 529, 932, 369, 385, 419, 222, 719, 342, 68, 156, 314, 343, 262, 467,
             499, 604, 732, 758, 765, 812, 859, 876,
         ];
-        //let nodes = 0..=44;
-        //let nodes = vec![4,9,3,2,1];
         for i in nodes {
             tree.put(i);
-            //unsafe{ Tree::checking_connections(tree.get_root());}
-            assert!(tree.helper_is_a_valid_red_black_tree());
         }
 
-        println!("After Test:\n{}", tree.display());
+        println!("{}", tree.display());
         unsafe {
             Tree::helper_checking_connections(tree.get_root());
         }
