@@ -83,36 +83,58 @@ pub struct BetterDeviceRegistry {
     pub length: u64,
 }
 
-fn display_node (node: BareTree) -> String {
+fn display_node(node: BareTree) -> String {
     unsafe {
-         
         let mut s: String = "".into();
-        let color = if node.borrow().color == Color::Red{"[color=\"red\"]"}else{"[color=\"black\"]"};
+        let color = if node.borrow().color == Color::Red {
+            "[color=\"red\"]"
+        } else {
+            "[color=\"black\"]"
+        };
         let n1 = node.borrow().dev.numerical_id;
 
         if let Some(left) = node.borrow().left.clone() {
-            s.push_str(&format!("\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n", 
-            n1=n1,
-            n2=left.borrow().dev.numerical_id,
-            color1=color,
-            color2=if left.borrow().color == Color::Red{"[color=\"red\"]"}else{"[color=\"black\"]"},
+            s.push_str(&format!(
+                "\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n",
+                n1 = n1,
+                n2 = left.borrow().dev.numerical_id,
+                color1 = color,
+                color2 = if left.borrow().color == Color::Red {
+                    "[color=\"red\"]"
+                } else {
+                    "[color=\"black\"]"
+                },
             ));
             s.push_str(&display_node(left));
-        } else if (*node.as_ptr()).right.is_some(){
-            s.push_str(&format!("\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",n1=n1,color1=color));
-            s.push_str(&format!("\tnode_null_{n1}[label=\"null\"]\n",n1=n1));
-        } 
+        } else if (*node.as_ptr()).right.is_some() {
+            s.push_str(&format!(
+                "\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",
+                n1 = n1,
+                color1 = color
+            ));
+            s.push_str(&format!("\tnode_null_{n1}[label=\"null\"]\n", n1 = n1));
+        }
 
         if let Some(right) = (*node.as_ptr()).right.clone() {
-            s.push_str(&format!("\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n", 
-            n1=n1,
-            n2=right.borrow().dev.numerical_id,
-            color2=if right.borrow().color == Color::Red{"[color=\"red\"]"}else{"[color=\"black\"]"}, 
-            color1=color));
+            s.push_str(&format!(
+                "\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n",
+                n1 = n1,
+                n2 = right.borrow().dev.numerical_id,
+                color2 = if right.borrow().color == Color::Red {
+                    "[color=\"red\"]"
+                } else {
+                    "[color=\"black\"]"
+                },
+                color1 = color
+            ));
             s.push_str(&display_node(right));
-        }else{
-            s.push_str(&format!("\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",n1=n1,color1=color));
-            s.push_str(&format!("\tnode_null_{}[label=\"null\"]\n",n1));
+        } else {
+            s.push_str(&format!(
+                "\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",
+                n1 = n1,
+                color1 = color
+            ));
+            s.push_str(&format!("\tnode_null_{}[label=\"null\"]\n", n1));
         }
         s
     }
@@ -144,9 +166,11 @@ impl BetterDeviceRegistry {
         } else {println!("RightNode");
             RBOperation::RightNode
         }*/
-        if a.numerical_id <= b.numerical_id {println!("LeftNode");
+        if a.numerical_id <= b.numerical_id {
+            println!("LeftNode");
             RBOperation::RightNode
-        } else {println!("RightNode");
+        } else {
+            println!("RightNode");
             RBOperation::LeftNode
         }
     }
@@ -205,10 +229,11 @@ impl BetterDeviceRegistry {
             } else {
                 0
             };
-            let black_height = black_height + match n.color {
-                Color::Black => 1,
-                _ => 0,
-            };
+            let black_height = black_height
+                + match n.color {
+                    Color::Black => 1,
+                    _ => 0,
+                };
             let l = self.validate(&n.left, n.color.clone(), black_height);
             let r = self.validate(&n.right, n.color.clone(), black_height);
             (red_red + l.0 + r.0, cmp::min(l.1, r.1), cmp::max(l.2, r.2))
@@ -467,7 +492,6 @@ impl BetterDeviceRegistry {
     }
 }
 
-
 /// $ cargo test red_black_tree_rc -- --nocapture
 #[cfg(test)]
 mod tests {
@@ -476,14 +500,14 @@ mod tests {
     #[test]
     fn test_success() {
         let mut tree = BetterDeviceRegistry::new_empty();
-        let nodes = vec![24,5,1,26,15,3,8/* ,13,16*/];
+        let nodes = vec![24, 5, 1, 26, 15, 3, 8 /* ,13,16*/];
         let nodes = 1..=9;
-        for i in nodes{ 
-            let s = format!("{}",i);
+        for i in nodes {
+            let s = format!("{}", i);
             tree.add(IoTDevice::new(i, s.as_str(), s.as_str()));
         }
- 
-        println!("{}",tree.display());
+
+        println!("{}", tree.display());
         assert!(true);
     }
 }

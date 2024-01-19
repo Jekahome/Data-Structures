@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
-#![allow(unused_variables)]
+//#![allow(unused_variables)]
 
-use llrb::{Tree,Node};
+use llrb::{Node, Tree};
 mod llrb {
     use std::cmp::Ordering;
     use std::fmt::{self, Debug, Display};
@@ -12,13 +12,13 @@ mod llrb {
     use std::ptr::NonNull;
 
     pub struct Tree<T: Ord + PartialEq + PartialOrd + Default + Display + Clone + Debug> {
-        pub fixed_head: Link<T>,
+        fixed_head: Link<T>,
         count: usize,
         _boo: PhantomData<T>,
     }
 
     type Link<T> = Option<NonNull<Node<T>>>;
- 
+
     #[derive(Debug)]
     pub struct Node<T: Display> {
         left: Link<T>,
@@ -28,34 +28,34 @@ mod llrb {
         value: T,
     }
 
-    enum OperationPut{
+    enum OperationPut {
         Left,
         Right,
-        FlipColors, 
-        Nothing
+        FlipColors,
+        Nothing,
     }
 
-    enum OperationRemoveFourOptions{
+    enum OperationRemoveFourOptions {
         RedLeaf,
         BlackLeaf,
         NodeWithChildren,
         BlackNodeWithRedLeaf,
-        Unimplemented
+        Unimplemented,
     }
 
-    enum OperationRemoveBlackLeaf{
-        LeftRedABlackBRedCleaf,// 2.1.1.1
-        RightRedABlackBRedCleaf,// 2.1.1.2
-        LeftRedABlackBleaf,// 2.1.2.1
-        RightRedABlackBleaf,// 2.1.2.2
-        BlackARedBWithBlackChildrenLeaf,//2.2.4
-        BlackARedBWithBlackChildrenRightHaveRedLeaf,//2.2.1
-        BlackALeftBlackBRedDleaf,//2.3.1.1
-        BlackARightBlackBRedDleaf,//2.3.1.2
-        BlackALeftBlackBleaf,//2.3.2.1
-        BlackARightBlackBleaf,//2.3.2.2
+    enum OperationRemoveBlackLeaf {
+        LeftRedABlackBRedCleaf,                      // 2.1.1.1
+        RightRedABlackBRedCleaf,                     // 2.1.1.2
+        LeftRedABlackBleaf,                          // 2.1.2.1
+        RightRedABlackBleaf,                         // 2.1.2.2
+        BlackARedBWithBlackChildrenLeaf,             // 2.2.4
+        BlackARedBWithBlackChildrenRightHaveRedLeaf, // 2.2.1
+        BlackALeftBlackBRedDleaf,                    // 2.3.1.1
+        BlackARightBlackBRedDleaf,                   // 2.3.1.2
+        BlackALeftBlackBleaf,                        // 2.3.2.1
+        BlackARightBlackBleaf,                       // 2.3.2.2
         Root,
-        Unimplemented
+        Unimplemented,
     }
 
     impl<T: Ord + PartialEq + PartialOrd + Default + Display + Clone + Debug> Tree<T> {
@@ -66,328 +66,432 @@ mod llrb {
                 _boo: PhantomData,
             }
         }
- 
+
         pub fn node_count(&self) -> usize {
             assert!(self.count != 0 || self.fixed_head.is_none());
             self.count
         }
-  
-        /// Найти элемент в дереве.
-        pub fn contains(&self, value: T) -> bool {    
-            let fixed_head = self.fixed_head.unwrap();
-            !find_node(self.get_root(), value).is_none()       
+
+        pub fn contains(&self, value: T) -> bool {
+            !find_node(self.get_root(), value).is_none()
         }
 
-        pub fn get_root(&self) -> Link<T>{
-            if let Some(fixed_head) = self.fixed_head{
-                unsafe{
-                    (*fixed_head.as_ptr()).left
-                }
-            }else{
+        pub fn get_root(&self) -> Link<T> {
+            if let Some(fixed_head) = self.fixed_head {
+                unsafe { (*fixed_head.as_ptr()).left }
+            } else {
                 None
             }
         }
-        
+
         // https://youtu.be/a9EwBVLQ364?list=PL79T_6pcZAxwN-q69gAnSle0J_IliNawo&t=613
         // https://youtu.be/OAkmHIR9YkY?t=1096
         // https://www.youtube.com/watch?v=T70nn4EyTrs
         pub fn remove(&mut self, value: T) -> bool {
-            unsafe{
+            unsafe {
                 let fixed_head = self.fixed_head.unwrap();
                 if let Some(node) = find_node((*fixed_head.as_ptr()).left, value) {
-                    if !self.remove_node(node){
+                    if !self.remove_node(node) {
                         return false;
                     }
-                }else{
+                } else {
                     return false;
-                } 
+                }
                 self.count -= 1;
-                true               
+                true
             }
         }
 
-        unsafe fn operation_remove(&self, node_x: &NonNull<Node<T>>) -> OperationRemoveFourOptions{
-            if (*node_x.as_ref()).is_red && (*node_x.as_ref()).left.is_none() && (*node_x.as_ref()).right.is_none(){
+        unsafe fn operation_remove(&self, node_x: &NonNull<Node<T>>) -> OperationRemoveFourOptions {
+            if (*node_x.as_ref()).is_red
+                && (*node_x.as_ref()).left.is_none()
+                && (*node_x.as_ref()).right.is_none()
+            {
                 return OperationRemoveFourOptions::RedLeaf;
             }
-            if (*node_x.as_ref()).is_red{
-                if (*node_x.as_ref()).left.is_some() && (*node_x.as_ref()).right.is_some(){
+            if (*node_x.as_ref()).is_red {
+                if (*node_x.as_ref()).left.is_some() && (*node_x.as_ref()).right.is_some() {
                     return OperationRemoveFourOptions::NodeWithChildren;
-                } 
+                }
             }
-            if !(*node_x.as_ref()).is_red{
-                if (*node_x.as_ref()).left.is_some() && (*node_x.as_ref()).right.is_some(){
+            if !(*node_x.as_ref()).is_red {
+                if (*node_x.as_ref()).left.is_some() && (*node_x.as_ref()).right.is_some() {
                     return OperationRemoveFourOptions::NodeWithChildren;
-                } else if (*node_x.as_ref()).left.is_some() && (*node_x.as_ref()).right.is_none(){
-                    if let Some(left) = (*node_x.as_ref()).left{
-                        if (*left.as_ref()).is_red && (*left.as_ref()).left.is_none() && (*left.as_ref()).right.is_none(){
+                } else if (*node_x.as_ref()).left.is_some() && (*node_x.as_ref()).right.is_none() {
+                    if let Some(left) = (*node_x.as_ref()).left {
+                        if (*left.as_ref()).is_red
+                            && (*left.as_ref()).left.is_none()
+                            && (*left.as_ref()).right.is_none()
+                        {
                             return OperationRemoveFourOptions::BlackNodeWithRedLeaf;
                         }
                     }
-                }else if (*node_x.as_ref()).left.is_none() && (*node_x.as_ref()).right.is_none(){
+                } else if (*node_x.as_ref()).left.is_none() && (*node_x.as_ref()).right.is_none() {
                     return OperationRemoveFourOptions::BlackLeaf;
                 }
             }
-
-            panic!("такого варианта быть не может");
-            OperationRemoveFourOptions::Unimplemented
+            panic!();
         }
 
-        unsafe fn operation_remove_black_leaf(&self, node_x: &NonNull<Node<T>>) -> OperationRemoveBlackLeaf{
-            // TODO: не учитывается рекурсивный подьем после измененной высоты
-            if let Some(node_a) = (*node_x.as_ref()).parent{
-                if (*node_a.as_ref()).is_red{
-                    if let Some(node_b) = (*node_a.as_ref()).left{
+        unsafe fn operation_remove_black_leaf(
+            &self,
+            node_x: &NonNull<Node<T>>,
+        ) -> OperationRemoveBlackLeaf {
+            if let Some(node_a) = (*node_x.as_ref()).parent {
+                if (*node_a.as_ref()).is_red {
+                    if let Some(node_b) = (*node_a.as_ref()).left {
                         if !std::ptr::eq(node_b.as_ptr(), node_x.as_ptr()) {
-                            if !(*node_b.as_ref()).is_red{
-                                if let Some(node_c) = (*node_b.as_ref()).left{
-                                    if (*node_c.as_ref()).is_red && 
-                                        (*node_c.as_ref()).left.is_none() && 
-                                        (*node_c.as_ref()).right.is_none() && (*node_b.as_ref()).right.is_none(){
-                                        return OperationRemoveBlackLeaf::LeftRedABlackBRedCleaf; // 2.1.1.1 
+                            if !(*node_b.as_ref()).is_red {
+                                if let Some(node_c) = (*node_b.as_ref()).left {
+                                    if (*node_c.as_ref()).is_red {
+                                        return OperationRemoveBlackLeaf::LeftRedABlackBRedCleaf;// 2.1.1.1
                                     }
-                                }else if (*node_b.as_ref()).right.is_none(){
-                                   
+                                } else {
                                     return OperationRemoveBlackLeaf::LeftRedABlackBleaf;// 2.1.2.1
                                 }
                             }
                         }
                     }
-                    if let Some(node_b) = (*node_a.as_ref()).right{
+                    if let Some(node_b) = (*node_a.as_ref()).right {
                         if !std::ptr::eq(node_b.as_ptr(), node_x.as_ptr()) {
-                            if !(*node_b.as_ref()).is_red{
-                                if let Some(node_c) = (*node_b.as_ref()).left{
-                                    if (*node_c.as_ref()).is_red && 
-                                        (*node_c.as_ref()).left.is_none() && 
-                                        (*node_c.as_ref()).right.is_none() && (*node_b.as_ref()).right.is_none(){
-                                        return OperationRemoveBlackLeaf::RightRedABlackBRedCleaf; // 2.1.1.2
+                            if !(*node_b.as_ref()).is_red {
+                                if let Some(node_c) = (*node_b.as_ref()).left {
+                                    if (*node_c.as_ref()).is_red {
+                                        return OperationRemoveBlackLeaf::RightRedABlackBRedCleaf;// 2.1.1.2 
                                     }
-                                }else if (*node_b.as_ref()).right.is_none(){
+                                } else {
                                     return OperationRemoveBlackLeaf::RightRedABlackBleaf;// 2.1.2.2
                                 }
                             }
                         }
                     }
-                }else{ 
+                } else {
                     // node A is black
-                    if let Some(node_b) = (*node_a.as_ref()).left{ 
-                        if !std::ptr::eq(node_b.as_ptr(), node_x.as_ptr()) { 
-                            if (*node_b.as_ref()).is_red && (*node_b.as_ref()).right.is_some(){
+                    if let Some(node_b) = (*node_a.as_ref()).left {
+                        if !std::ptr::eq(node_b.as_ptr(), node_x.as_ptr()) {
+                            if (*node_b.as_ref()).is_red && (*node_b.as_ref()).right.is_some() {
                                 let node_c = (*node_b.as_ref()).right.unwrap();
                                 if !(*node_c.as_ref()).is_red {
-                                    if (*node_c.as_ref()).left.is_none() && (*node_c.as_ref()).right.is_none() {
-                                        return OperationRemoveBlackLeaf::BlackARedBWithBlackChildrenLeaf;// 2.2.2
-                                    }
-                                    if (*node_c.as_ref()).left.is_some(){
-                                        if let Some(node_d) = (*node_c.as_ref()).left{
-                                            if (*node_d.as_ref()).is_red{
+                                    if (*node_c.as_ref()).left.is_some() {
+                                        if let Some(node_d) = (*node_c.as_ref()).left {
+                                            if (*node_d.as_ref()).is_red {
                                                 return OperationRemoveBlackLeaf::BlackARedBWithBlackChildrenRightHaveRedLeaf;// 2.2.1
                                             }
                                         }
-                                    }                                
+                                    }
+                                    return OperationRemoveBlackLeaf::BlackARedBWithBlackChildrenLeaf;// 2.2.2 
                                 }
-                            }else if !(*node_b.as_ref()).is_red && (*node_b.as_ref()).left.is_some() && (*node_b.as_ref()).right.is_none(){
-                                if let Some(node_d) = (*node_b.as_ref()).left{
-                                    if (*node_d.as_ref()).is_red{
+                            }
+                            if !(*node_b.as_ref()).is_red && (*node_b.as_ref()).left.is_some() {
+                                if let Some(node_d) = (*node_b.as_ref()).left {
+                                    if (*node_d.as_ref()).is_red {
                                         return OperationRemoveBlackLeaf::BlackALeftBlackBRedDleaf;// 2.3.1.1
                                     }
                                 }
-                            }else if !(*node_b.as_ref()).is_red && (*node_b.as_ref()).left.is_none() && (*node_b.as_ref()).right.is_none(){
+                            }
+                            if !(*node_b.as_ref()).is_red {
                                 return OperationRemoveBlackLeaf::BlackALeftBlackBleaf;// 2.3.2.1
                             }
                         }
                     }
-                    if let Some(node_b) = (*node_a.as_ref()).right{ 
-                        if !std::ptr::eq(node_b.as_ptr(), node_x.as_ptr()) { 
-                            if !(*node_b.as_ref()).is_red && (*node_b.as_ref()).left.is_some() && (*node_b.as_ref()).right.is_none(){
-                                if let Some(node_d) = (*node_b.as_ref()).left{
-                                    if (*node_d.as_ref()).is_red{
+                    if let Some(node_b) = (*node_a.as_ref()).right {
+                        if !std::ptr::eq(node_b.as_ptr(), node_x.as_ptr()) {
+                            if !(*node_b.as_ref()).is_red && (*node_b.as_ref()).left.is_some() {
+                                if let Some(node_d) = (*node_b.as_ref()).left {
+                                    if (*node_d.as_ref()).is_red {
                                         return OperationRemoveBlackLeaf::BlackARightBlackBRedDleaf;// 2.3.1.2
                                     }
                                 }
-                            }else if !(*node_b.as_ref()).is_red && (*node_b.as_ref()).left.is_none() && (*node_b.as_ref()).right.is_none(){
+                            }
+                            if !(*node_b.as_ref()).is_red {
                                 return OperationRemoveBlackLeaf::BlackARightBlackBleaf;// 2.3.2.2
-
                             }
                         }
                     }
                 }
-            }else{
+            } else {
                 return OperationRemoveBlackLeaf::Root;
             }
             OperationRemoveBlackLeaf::Unimplemented
         }
 
+        unsafe fn remove_black_leaf(&mut self, node_x: NonNull<Node<T>>) -> bool {
+            let mut next = node_x;
+            let mut removed = false;
+            loop {
+                match self.operation_remove_black_leaf(&next) {
+                    OperationRemoveBlackLeaf::LeftRedABlackBRedCleaf => {
+                        self.remove_black_leaf_2_1_1_1_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                        break;
+                    }
+                    OperationRemoveBlackLeaf::RightRedABlackBRedCleaf => {
+                        self.remove_black_leaf_2_1_1_2_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                        break;
+                    }
+                    OperationRemoveBlackLeaf::LeftRedABlackBleaf => {
+                        self.remove_black_leaf_2_1_2_1_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                        break;
+                    }
+                    OperationRemoveBlackLeaf::RightRedABlackBleaf => {
+                        self.remove_black_leaf_2_1_2_2_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                        break;
+                    }
+                    OperationRemoveBlackLeaf::BlackARedBWithBlackChildrenRightHaveRedLeaf => {
+                        self.remove_black_leaf_2_2_1_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                        break;
+                    }
+                    OperationRemoveBlackLeaf::BlackARedBWithBlackChildrenLeaf => {
+                        self.remove_black_leaf_2_2_2_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                        break;
+                    }
+                    OperationRemoveBlackLeaf::BlackALeftBlackBRedDleaf => {
+                        self.remove_black_leaf_2_3_1_1_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                        break;
+                    }
+                    OperationRemoveBlackLeaf::BlackARightBlackBRedDleaf => {
+                        self.remove_black_leaf_2_3_1_2_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                        break;
+                    }
+                    OperationRemoveBlackLeaf::BlackALeftBlackBleaf => {
+                        next = self.remove_black_leaf_2_3_2_1_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                    }
+                    OperationRemoveBlackLeaf::BlackARightBlackBleaf => {
+                        next = self.remove_black_leaf_2_3_2_2_balancing(&next);
+                        if !removed {
+                            removed = self.remove_leaf(node_x);
+                        }
+                    }
+                    OperationRemoveBlackLeaf::Root => {
+                        removed = true;
+                        break;
+                    }
+                    OperationRemoveBlackLeaf::Unimplemented => {
+                        panic!();
+                    }
+                }
+            }
+            return removed;
+        }
+
         /*
-            2.1.1.1 remove black X 
+            2.1.1.1 remove black X
 
                  P            P
-                //           // 
+                //           //
                A            B
               / \          / \
              B   X   =>   C   A
-            //
-           C
+            //\              /
+           C   D            D
         */
-        unsafe fn remove_black_leaf_2_1_1_1(&mut self, node_x: NonNull<Node<T>>) -> bool{
+        unsafe fn remove_black_leaf_2_1_1_1_balancing(&mut self, node_x: &NonNull<Node<T>>) {
             let node_a = (*node_x.as_ptr()).parent.unwrap();
             let node_b = (*node_a.as_ptr()).left.unwrap();
+            let node_d = (*node_a.as_ptr()).right;
             (*node_b.as_ptr()).parent = (*node_a.as_ptr()).parent;
-            if let Some(ref mut parent) = (*node_b.as_ptr()).parent{
+            if let Some(ref mut parent) = (*node_b.as_ptr()).parent {
                 (*parent.as_ptr()).left = Some(node_b);
             }
-            (*node_a.as_ptr()).left = None;
-            (*node_a.as_ptr()).right = None;
+            (*node_a.as_ptr()).left = node_d;
+            if let Some(n_d) = node_d {
+                (*n_d.as_ptr()).parent = Some(node_a);
+            }
             (*node_a.as_ptr()).is_red = false;
             (*node_b.as_ptr()).right = Some(node_a);
             (*node_a.as_ptr()).parent = Some(node_b);
             (*node_b.as_ptr()).is_red = true;
-            if let Some(node_c) = (*node_b.as_ptr()).left{
+            if let Some(node_c) = (*node_b.as_ptr()).left {
                 (*node_c.as_ptr()).is_red = false;
             }
-            self.remove_leaf(node_x)
         }
 
         /*
-          2.1.1.2 remove black X 
+          2.1.1.2 remove black X
 
                 P              P
                //             //
-              A              C
-             / \            / \
-            X   B   =>     A   B 
-               //
-               C
-
+              A               C
+             / \            /   \
+            X   B   =>     A     B
+               //           \   /
+               C             E D
+              / \
+             E   D
         */
-        unsafe fn remove_black_leaf_2_1_1_2(&mut self, node_x: NonNull<Node<T>>) -> bool{
+        unsafe fn remove_black_leaf_2_1_1_2_balancing(&mut self, node_x: &NonNull<Node<T>>) {
             let node_a = (*node_x.as_ptr()).parent.unwrap();
             (*node_a.as_ptr()).is_red = false;
             let parent: NonNull<Node<T>> = (*node_a.as_ptr()).parent.unwrap();
             let node_b = (*node_a.as_ptr()).right.unwrap();
             let node_c = (*node_b.as_ptr()).left.unwrap();
+            let node_e = (*node_c.as_ptr()).left;
+            let node_d = (*node_c.as_ptr()).right;
             (*parent.as_ptr()).left = Some(node_c);
             (*node_c.as_ptr()).parent = Some(parent);
-            (*node_b.as_ptr()).left = None;
+            (*node_b.as_ptr()).left = node_d;
+            if let Some(n_d) = node_d {
+                (*n_d.as_ptr()).parent = Some(node_b);
+            }
             (*node_c.as_ptr()).right = Some(node_b);
             (*node_b.as_ptr()).parent = Some(node_c);
             (*node_c.as_ptr()).left = Some(node_a);
             (*node_a.as_ptr()).parent = Some(node_c);
-            (*node_a.as_ptr()).right = None;
-            self.remove_leaf(node_x)
+            (*node_a.as_ptr()).right = node_e;
+            if let Some(n_e) = node_e {
+                (*n_e.as_ptr()).parent = Some(node_a);
+            }
         }
 
         /*
-            2.1.2.1 remove black X 
+            2.1.2.1 remove black X
 
                  P            P
-                //           / 
+                //           /
                A            A
-              / \          //  
-             B   X   =>   B    
-             
+              / \          //
+             B   X   =>   B
+
         */
-        unsafe fn remove_black_leaf_2_1_2_1(&mut self, node_x: NonNull<Node<T>>) -> bool{ 
-            // A не может быть root
-            // A только слева от P 
-            if let Some(ref mut node_a) = (*node_x.as_ptr()).parent{
-                (*node_a.as_ptr()).is_red = false;
-                if let Some(ref mut node_b) = (*node_a.as_ptr()).left{
-                    (*node_b.as_ptr()).is_red = true;
-                }
+        unsafe fn remove_black_leaf_2_1_2_1_balancing(&mut self, node_x: &NonNull<Node<T>>) {
+            let node_a = (*node_x.as_ptr()).parent.unwrap();
+            (*node_a.as_ptr()).is_red = false;
+            if let Some(node_b) = (*node_a.as_ptr()).left {
+                (*node_b.as_ptr()).is_red = true;
             }
-            self.remove_leaf(node_x)
         }
 
         /*
-           2.1.2.2 remove black X 
- 
+           2.1.2.2 remove black X
+
                 P            P
                //           /
               A     =>     B
-             / \          //
-            X   B        A
+             / \          //\
+            X   B        A   D
+               / \        \
+              C   D        C
 
         */
-        unsafe fn remove_black_leaf_2_1_2_2(&mut self, node_x: NonNull<Node<T>>) -> bool{  
+        unsafe fn remove_black_leaf_2_1_2_2_balancing(&mut self, node_x: &NonNull<Node<T>>) {
             let node_a = (*node_x.as_ptr()).parent.unwrap();
             let node_b = (*node_a.as_ptr()).right.unwrap();
+            let node_c = (*node_b.as_ptr()).left;
+            let node_d = (*node_b.as_ptr()).right;
             let parent = (*node_a.as_ptr()).parent.unwrap();
-            if let Some(left) = (*parent.as_ptr()).left{
-                if std::ptr::eq(node_a.as_ptr(), left.as_ptr()) { 
+            if let Some(left) = (*parent.as_ptr()).left {
+                if std::ptr::eq(node_a.as_ptr(), left.as_ptr()) {
                     (*parent.as_ptr()).left = Some(node_b);
-                }else{
+                } else {
                     (*parent.as_ptr()).right = Some(node_b);
                 }
-            }else{
+            } else {
                 (*parent.as_ptr()).right = Some(node_b);
             }
             (*node_b.as_ptr()).parent = Some(parent);
             (*node_b.as_ptr()).left = Some(node_a);
+            (*node_b.as_ptr()).right = node_d;
+            if let Some(n_d) = node_d {
+                (*n_d.as_ptr()).parent = Some(node_b);
+            }
             (*node_a.as_ptr()).parent = Some(node_b);
-            (*node_a.as_ptr()).right = None;
-            self.remove_leaf(node_x)
+            (*node_a.as_ptr()).right = node_c;
+            if let Some(n_c) = node_c {
+                (*n_c.as_ptr()).parent = Some(node_a);
+            }
         }
 
         /*
-            2.2.1 remove black X 
+            2.2.1 remove black X
 
-                P            P
-                |            | 
-                A            B
-              // \            \
-             B    X   =>       A
-              \               //
-               C             C
-              //
-             D 
-        */        
-        unsafe fn remove_black_leaf_2_2_1(&mut self, node_x: NonNull<Node<T>>) -> bool{ 
+                P               P
+                |               |
+                A               C
+              // \            //  \
+             B    X    =>    B     A
+              \               \   /
+               C               D E
+              //\
+             D   E
+        */
+        unsafe fn remove_black_leaf_2_2_1_balancing(&mut self, node_x: &NonNull<Node<T>>) {
             let n_a = (*node_x.as_ref()).parent.unwrap();
-            if (*n_a.as_ref()).parent.is_some(){
-                let parent = (*n_a.as_ptr()).parent.unwrap(); 
+            if (*n_a.as_ref()).parent.is_some() {
+                let parent = (*n_a.as_ptr()).parent.unwrap();
                 let mut node_a_from_left = false;
-                if let Some(ref mut node_a) = (*parent.as_ptr()).left{
-                    if std::ptr::eq(node_a.as_ptr(), n_a.as_ptr()) { 
+                if let Some(ref mut node_a) = (*parent.as_ptr()).left {
+                    if std::ptr::eq(node_a.as_ptr(), n_a.as_ptr()) {
                         node_a_from_left = true;
-                    } 
-                } 
-                let node_a = if node_a_from_left{
+                    }
+                }
+                let node_a = if node_a_from_left {
                     (*parent.as_ptr()).left.unwrap()
-                }else{
+                } else {
                     (*parent.as_ptr()).right.unwrap()
                 };
                 let node_b = (*node_a.as_ptr()).left.unwrap();
                 let node_c = (*node_b.as_ptr()).right.unwrap();
+                let node_e = (*node_c.as_ptr()).right;
                 let node_d = (*node_c.as_ptr()).left.unwrap();
                 (*node_b.as_ptr()).right = Some(node_d);
                 (*node_b.as_ptr()).parent = Some(node_c);
                 (*node_d.as_ptr()).parent = Some(node_b);
                 (*node_a.as_ptr()).parent = Some(node_c);
-                (*node_a.as_ptr()).left = None;
-                (*node_a.as_ptr()).right = None;
+                (*node_a.as_ptr()).left = node_e;
+                if let Some(n_e) = node_e {
+                    (*n_e.as_ptr()).parent = Some(node_a);
+                }
                 (*node_d.as_ptr()).is_red = false;
                 (*node_c.as_ptr()).left = Some(node_b);
                 (*node_c.as_ptr()).right = Some(node_a);
                 (*node_c.as_ptr()).parent = Some(parent);
-                if node_a_from_left{
+                if node_a_from_left {
                     (*parent.as_ptr()).left = Some(node_c);
-                }else{
+                } else {
                     (*parent.as_ptr()).right = Some(node_c);
-                } 
-            }else{
+                }
+            } else {
                 // node_a is root
-                if let Some(fixed_head) = self.fixed_head{
+                if let Some(fixed_head) = self.fixed_head {
                     let node_a = (*fixed_head.as_ptr()).left.unwrap();
                     let node_b = (*node_a.as_ptr()).left.unwrap();
                     let node_c = (*node_b.as_ptr()).right.unwrap();
+                    let node_e = (*node_c.as_ptr()).right;
                     let node_d = (*node_c.as_ptr()).left.unwrap();
                     (*node_b.as_ptr()).right = Some(node_d);
                     (*node_b.as_ptr()).parent = Some(node_c);
                     (*node_d.as_ptr()).parent = Some(node_b);
                     (*node_a.as_ptr()).parent = Some(node_c);
-                    (*node_a.as_ptr()).left = None;
-                    (*node_a.as_ptr()).right = None;
+                    (*node_a.as_ptr()).left = node_e;
+                    if let Some(n_e) = node_e {
+                        (*n_e.as_ptr()).parent = Some(node_a);
+                    }
                     (*node_d.as_ptr()).is_red = false;
                     (*node_c.as_ptr()).left = Some(node_b);
                     (*node_c.as_ptr()).right = Some(node_a);
@@ -395,33 +499,32 @@ mod llrb {
                     (*fixed_head.as_ptr()).left = Some(node_c);
                 }
             }
-            return self.remove_leaf(node_x);
         }
- 
+
         /*
-            2.2.2 remove black X 
+            2.2.2 remove black X
 
                 P            P
-                |            | 
+                |            |
                 A            B
               // \            \
              B    X   =>       A
               \               //
                C             C
         */
-        unsafe fn remove_black_leaf_2_2_2(&mut self, node_x: NonNull<Node<T>>) -> bool{ 
+        unsafe fn remove_black_leaf_2_2_2_balancing(&mut self, node_x: &NonNull<Node<T>>) {
             let n_a = (*node_x.as_ref()).parent.unwrap();
-            if (*n_a.as_ref()).parent.is_some(){
-                let parent = (*n_a.as_ptr()).parent.unwrap(); 
+            if (*n_a.as_ref()).parent.is_some() {
+                let parent = (*n_a.as_ptr()).parent.unwrap();
                 let mut node_a_from_left = false;
-                if let Some(ref mut node_a) = (*parent.as_ptr()).left{
-                    if std::ptr::eq(node_a.as_ptr(), n_a.as_ptr()) { 
+                if let Some(ref mut node_a) = (*parent.as_ptr()).left {
+                    if std::ptr::eq(node_a.as_ptr(), n_a.as_ptr()) {
                         node_a_from_left = true;
-                    } 
-                } 
-                let node_a = if node_a_from_left{
+                    }
+                }
+                let node_a = if node_a_from_left {
                     (*parent.as_ptr()).left.unwrap()
-                }else{
+                } else {
                     (*parent.as_ptr()).right.unwrap()
                 };
                 let node_b = (*node_a.as_ptr()).left.unwrap();
@@ -433,14 +536,14 @@ mod llrb {
                 (*node_a.as_ptr()).left = Some(node_c);
                 (*node_c.as_ptr()).parent = Some(node_a);
                 (*node_a.as_ptr()).parent = Some(node_b);
-                if node_a_from_left{
+                if node_a_from_left {
                     (*parent.as_ptr()).left = Some(node_b);
-                }else{
+                } else {
                     (*parent.as_ptr()).right = Some(node_b);
                 }
-            }else{
+            } else {
                 // node_a is root
-                if let Some(fixed_head) = self.fixed_head{
+                if let Some(fixed_head) = self.fixed_head {
                     let node_a = (*fixed_head.as_ptr()).left.unwrap();
                     let node_b = (*node_a.as_ptr()).left.unwrap();
                     (*node_b.as_ptr()).is_red = false;
@@ -451,136 +554,144 @@ mod llrb {
                     (*node_a.as_ptr()).left = Some(node_c);
                     (*node_c.as_ptr()).parent = Some(node_a);
                     (*node_a.as_ptr()).parent = Some(node_b);
-                    (*fixed_head.as_ptr()).left = Some(node_b);  
+                    (*fixed_head.as_ptr()).left = Some(node_b);
                 }
             }
-            return self.remove_leaf(node_x);
         }
- 
+
         /*
-          2.3.1.1 remove black X 
+          2.3.1.1 remove black X
 
               A           B
              / \         / \
             B   X  =>   D   A
-           //
-          D
-        
+           // \            /
+          D    C          C
+
         */
-        unsafe fn remove_black_leaf_2_3_1_1(&mut self, node_x: NonNull<Node<T>>) -> bool{ 
+        unsafe fn remove_black_leaf_2_3_1_1_balancing(&mut self, node_x: &NonNull<Node<T>>) {
             let node_a = (*node_x.as_ptr()).parent.unwrap();
-            if let Some(parent) = (*node_a.as_ptr()).parent{
+            if let Some(parent) = (*node_a.as_ptr()).parent {
                 let node_b = (*node_a.as_ptr()).left.unwrap();
+                let node_c = (*node_b.as_ptr()).right;
                 let node_d = (*node_b.as_ptr()).left.unwrap();
                 (*node_d.as_ptr()).is_red = false;
                 let mut node_a_from_left = false;
-                if let Some(p_node_a) = (*parent.as_ptr()).left{
+                if let Some(p_node_a) = (*parent.as_ptr()).left {
                     if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
                         node_a_from_left = true;
-                        
-                    }               
+                    }
                 }
-                let node_b = (*node_a.as_ptr()).left.unwrap();
                 (*node_b.as_ptr()).parent = Some(parent);
                 (*node_b.as_ptr()).right = Some(node_a);
                 (*node_a.as_ptr()).parent = Some(node_b);
-                (*node_a.as_ptr()).left = None;
-                if node_a_from_left{
+                (*node_a.as_ptr()).left = node_c;
+                if let Some(n_c) = node_c {
+                    (*n_c.as_ptr()).parent = Some(node_a);
+                }
+                if node_a_from_left {
                     (*parent.as_ptr()).left = Some(node_b);
-                }else{
+                } else {
                     (*parent.as_ptr()).right = Some(node_b);
-                }   
-            }else{
+                }
+            } else {
                 // node_a is root
-                if let Some(fixed_head) = self.fixed_head{
+                if let Some(fixed_head) = self.fixed_head {
                     let node_a = (*fixed_head.as_ptr()).left.unwrap();
                     let node_b = (*node_a.as_ptr()).left.unwrap();
+                    let node_c = (*node_b.as_ptr()).right;
                     let node_d = (*node_b.as_ptr()).left.unwrap();
                     (*node_d.as_ptr()).is_red = false;
                     let node_b = (*node_a.as_ptr()).left.unwrap();
                     (*node_b.as_ptr()).parent = None;
                     (*node_b.as_ptr()).right = Some(node_a);
                     (*node_a.as_ptr()).parent = Some(node_b);
-                    (*node_a.as_ptr()).left = None;
+                    (*node_a.as_ptr()).left = node_c;
+                    if let Some(n_c) = node_c {
+                        (*n_c.as_ptr()).parent = Some(node_a);
+                    }
                     (*fixed_head.as_ptr()).left = Some(node_b);
                 }
             }
-            return self.remove_leaf(node_x);
         }
 
         /*
-            2.3.1.2 remove black X 
-         
-              P           P
-              |           |
-              A           D
-             / \         / \
-            X   B  =>   A   B
-               //
-               D
-        
+            2.3.1.2 remove black X
+
+              P            P
+              |            |
+              A            D
+             / \         /   \
+            X   B  =>   A     B
+               //        \   /
+               D          C E
+              / \
+             C   E
         */
-        unsafe fn remove_black_leaf_2_3_1_2(&mut self, node_x: NonNull<Node<T>>) -> bool{ 
+        unsafe fn remove_black_leaf_2_3_1_2_balancing(&mut self, node_x: &NonNull<Node<T>>) {
             let node_a = (*node_x.as_ptr()).parent.unwrap();
-            if let Some(parent) = (*node_a.as_ptr()).parent{
+            if let Some(parent) = (*node_a.as_ptr()).parent {
                 let node_b = (*node_a.as_ptr()).right.unwrap();
                 let node_d = (*node_b.as_ptr()).left.unwrap();
+                let node_c = (*node_d.as_ptr()).left;
+                let node_e = (*node_d.as_ptr()).right;
                 (*node_d.as_ptr()).is_red = false;
                 let mut node_a_from_left = false;
-                if let Some(p_node_a) = (*parent.as_ptr()).left{
+                if let Some(p_node_a) = (*parent.as_ptr()).left {
                     if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
                         node_a_from_left = true;
-                    }                
-                } 
+                    }
+                }
                 (*node_d.as_ptr()).parent = Some(parent);
                 (*node_d.as_ptr()).left = Some(node_a);
                 (*node_d.as_ptr()).right = Some(node_b);
                 (*node_a.as_ptr()).parent = Some(node_d);
                 (*node_b.as_ptr()).parent = Some(node_d);
-                (*node_a.as_ptr()).right = None;
-                (*node_b.as_ptr()).left = None;
-                if node_a_from_left{
+                (*node_a.as_ptr()).right = node_c;
+                if let Some(n_c) = node_c {
+                    (*n_c.as_ptr()).parent = Some(node_a);
+                }
+                (*node_b.as_ptr()).left = node_e;
+                if let Some(n_e) = node_e {
+                    (*n_e.as_ptr()).parent = Some(node_b);
+                }
+                if node_a_from_left {
                     (*parent.as_ptr()).left = Some(node_d);
-                }else{
+                } else {
                     (*parent.as_ptr()).right = Some(node_d);
                 }
-            }else{
+            } else {
                 // node_a is root
-                if let Some(fixed_head) = self.fixed_head{
+                if let Some(fixed_head) = self.fixed_head {
                     let node_a = (*fixed_head.as_ptr()).left.unwrap();
                     let node_b = (*node_a.as_ptr()).right.unwrap();
                     let node_d = (*node_b.as_ptr()).left.unwrap();
+                    let node_c = (*node_d.as_ptr()).left;
+                    let node_e = (*node_d.as_ptr()).right;
                     (*node_d.as_ptr()).is_red = false;
                     (*node_d.as_ptr()).parent = None;
                     (*node_d.as_ptr()).left = Some(node_a);
                     (*node_d.as_ptr()).right = Some(node_b);
                     (*node_a.as_ptr()).parent = Some(node_d);
                     (*node_b.as_ptr()).parent = Some(node_d);
-                    (*node_a.as_ptr()).right = None;
-                    (*node_b.as_ptr()).left = None;
+                    (*node_a.as_ptr()).right = node_c;
+                    if let Some(n_c) = node_c {
+                        (*n_c.as_ptr()).parent = Some(node_a);
+                    }
+                    (*node_b.as_ptr()).left = node_e;
+                    if let Some(n_e) = node_e {
+                        (*n_e.as_ptr()).parent = Some(node_b);
+                    }
                     (*fixed_head.as_ptr()).left = Some(node_d);
                 }
             }
-            return self.remove_leaf(node_x);
         }
 
         /*
             https://youtu.be/gCPtoK07yRA?t=3266
             https://youtu.be/gCPtoK07yRA?t=4599
 
-            2.3.2.1 remove black X 
-
-            4 Возможных случая после удаления !!!!
-
-            1) P is red
-
-              P           P
-              ||          |
-              A           A
-             / \   =>    //   
-            B   X       B
-
-            2) P is black
+            2.3.2.1 remove black X
 
              P           P
              |           |
@@ -588,279 +699,279 @@ mod llrb {
             / \   =>    //   => next check node P
            B   X       B
 
-
         */
-        unsafe fn remove_black_leaf_2_3_2_1(&mut self, node_x: NonNull<Node<T>>) -> bool{
-            // найти кандидата для замены цвета
-            // По анимации видно что ищут красный узел и спускают красный цвет по ветвям вниз пока не дойдут до B
-           
-           // Двойная чернота (т.е. долг по высоте) если она передвигается на красный узел то он становится черным
-            // если на черный узел то он станет дважды черным
-
-            // 1. Красим B в красный
-            // 2. Если P был красным то теперь он станет черным и конец
-            //    Если P был черным мы передвигает дважды черноту выше
-            unimplemented!();
-             
+        unsafe fn remove_black_leaf_2_3_2_1_balancing(
+            &mut self,
+            node_x: &NonNull<Node<T>>,
+        ) -> NonNull<Node<T>> {
+            let node_a = (*node_x.as_ptr()).parent.unwrap();
+            let node_b = (*node_a.as_ptr()).left.unwrap();
+            (*node_b.as_ptr()).is_red = true;
+            return node_a;
         }
 
         /*
-            2.3.2.2 remove black X 
+            2.3.2.2 remove black X
 
-              P           P
-              |           |
-              A           B
-             / \   =>    //  =>  ...
-            X   B       A
-
+              P            P
+              |            |
+              A            B
+             / \   =>    // \    =>  next check node P
+            X   B       A    D
+               / \       \
+              C   D       C
         */
-        unsafe fn remove_black_leaf_2_3_2_2(&mut self, node_x: NonNull<Node<T>>) -> bool{
-            // найти кандидата для замены цвета
+        unsafe fn remove_black_leaf_2_3_2_2_balancing(
+            &mut self,
+            node_x: &NonNull<Node<T>>,
+        ) -> NonNull<Node<T>> {
             let node_a = (*node_x.as_ptr()).parent.unwrap();
             (*node_a.as_ptr()).is_red = true;
-            if let Some(parent) = (*node_a.as_ptr()).parent{
+            if let Some(parent) = (*node_a.as_ptr()).parent {
                 let node_b = (*node_a.as_ptr()).right.unwrap();
+                let node_c = (*node_b.as_ptr()).left;
+                let node_d = (*node_b.as_ptr()).right;
                 let mut node_a_from_left = false;
-                if let Some(p_node_a) = (*parent.as_ptr()).left{
+                if let Some(p_node_a) = (*parent.as_ptr()).left {
                     if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
                         node_a_from_left = true;
-                    }                
-                } 
+                    }
+                }
                 (*node_b.as_ptr()).parent = Some(parent);
-                (*node_a.as_ptr()).right = (*node_b.as_ptr()).left;
+                (*node_a.as_ptr()).right = node_c;
+                if let Some(n_c) = node_c {
+                    (*n_c.as_ptr()).parent = Some(node_a);
+                }
+                (*node_b.as_ptr()).right = node_d;
+                if let Some(n_d) = node_d {
+                    (*n_d.as_ptr()).parent = Some(node_b);
+                }
                 (*node_b.as_ptr()).left = Some(node_a);
                 (*node_a.as_ptr()).parent = Some(node_b);
-                if node_a_from_left{
+                if node_a_from_left {
                     (*parent.as_ptr()).left = Some(node_b);
-                }else{
+                } else {
                     (*parent.as_ptr()).right = Some(node_b);
                 }
-                // NEXT
-                self.remove_black_leaf_with_black_deficiency(node_b);
-            }else{
+                return node_b;
+            } else {
                 // node_a is root
-                if let Some(fixed_head) = self.fixed_head{
+                if let Some(fixed_head) = self.fixed_head {
                     let node_a = (*fixed_head.as_ptr()).left.unwrap();
                     (*node_a.as_ptr()).is_red = true;
                     let node_b = (*node_a.as_ptr()).right.unwrap();
+                    let node_c = (*node_b.as_ptr()).left;
+                    let node_d = (*node_b.as_ptr()).right;
                     (*node_b.as_ptr()).parent = None;
-                    (*node_a.as_ptr()).right = (*node_b.as_ptr()).left;
+                    (*node_a.as_ptr()).right = node_c;
+                    if let Some(n_c) = node_c {
+                        (*n_c.as_ptr()).parent = Some(node_a);
+                    }
+                    (*node_b.as_ptr()).right = node_d;
+                    if let Some(n_d) = node_d {
+                        (*n_d.as_ptr()).parent = Some(node_b);
+                    }
                     (*node_b.as_ptr()).left = Some(node_a);
                     (*node_a.as_ptr()).parent = Some(node_b);
                     (*fixed_head.as_ptr()).left = Some(node_b);
                 }
+                return self.get_root().unwrap();
             }
-            return self.remove_leaf(node_x);
-        }
-
-
-        unsafe fn remove_black_leaf_with_black_deficiency(&mut self, node: NonNull<Node<T>>){
-            unimplemented!()
         }
 
         // https://www.youtube.com/watch?v=T70nn4EyTrs
-        unsafe fn remove_node(&mut self, node: NonNull<Node<T>>) -> bool{ 
-            match self.operation_remove(&node){
+        unsafe fn remove_node(&mut self, node: NonNull<Node<T>>) -> bool {
+            match self.operation_remove(&node) {
                 OperationRemoveFourOptions::RedLeaf => {
                     /*
-                       1.0.0
+                      option 1.0.0
 
-                        P
-                        ||
-                        X
+                       P
+                       ||
+                       X
 
-                     */
-                    println!("RedLeaf");
-                    return self.remove_leaf(node); 
-                },
+                    */
+                    return self.remove_leaf(node);
+                }
                 OperationRemoveFourOptions::BlackLeaf => {
-                    println!("BlackLeaf::");
-                    // 2
-                    //unimplemented!("BlackLeaf")
-                    match self.operation_remove_black_leaf(&node){
-                        OperationRemoveBlackLeaf::LeftRedABlackBRedCleaf =>{
-                            println!("2.1.1.1");
-                            self.remove_black_leaf_2_1_1_1(node);
-                        },
-                        OperationRemoveBlackLeaf::RightRedABlackBRedCleaf => {
-                            println!("2.1.1.2");
-                            self.remove_black_leaf_2_1_1_2(node);
-                        },
-
-                        OperationRemoveBlackLeaf::LeftRedABlackBleaf => {
-                            println!("2.1.2.1");
-                            self.remove_black_leaf_2_1_2_1(node);
-                        },
-                        OperationRemoveBlackLeaf::RightRedABlackBleaf => {
-                            println!("2.1.2.2");
-                            self.remove_black_leaf_2_1_2_2(node);
-                        },
-
-                        OperationRemoveBlackLeaf::BlackARedBWithBlackChildrenRightHaveRedLeaf => {
-                            println!("2.2.1");
-                            self.remove_black_leaf_2_2_1(node);
-                        },
-                        OperationRemoveBlackLeaf::BlackARedBWithBlackChildrenLeaf => {
-                            println!("2.2.2");
-                            self.remove_black_leaf_2_2_2(node);
-                        },
-                        OperationRemoveBlackLeaf::BlackALeftBlackBRedDleaf=>{
-                            println!("2.3.1.1");
-                            self.remove_black_leaf_2_3_1_1(node);
-                        },
-
-                        OperationRemoveBlackLeaf::BlackARightBlackBRedDleaf=>{
-                            println!("2.3.1.2");
-                            self.remove_black_leaf_2_3_1_2(node);
-                        },
-                       OperationRemoveBlackLeaf::BlackALeftBlackBleaf=>{
-                            println!("2.3.2.1");
-                            self.remove_black_leaf_2_3_2_1(node);
-                        },
-                        OperationRemoveBlackLeaf::BlackARightBlackBleaf=>{
-                            println!("2.3.2.2");
-                            self.remove_black_leaf_2_3_2_2(node);
-                        }, 
-                        _ => {
-                            unimplemented!("BlackLeaf")
-                        }
-                    }
-                },
+                    // option 2 black leaf
+                    return self.remove_black_leaf(node);
+                }
                 OperationRemoveFourOptions::NodeWithChildren => {
                     /*
-                      4.0.0
+                      option 4.0.0
 
-                           X
-                         /   \
-                        L     R
-                         \    /
-                          C  L
-                            /
-                           C
-                        ... ...
+                             X
+                         /      \
+                        L        R
+                       / \      / \
+                          C    L
+                         ...  /
+                             C
+                             ...
 
                     */
-                    println!("NodeWithChildren::");
-                    // из левого мы можем искать максимальное, а из правого - минимальное
-                     
-                    // выбрать лучшую стратегию удаления из доступных
-                    /*
-                        - Ориентироваться на цвет (красные удалять мы уже умеем, и, как мы узнаем далее, они проще)
-                        - Ориентироваться на "дальность" -- на какой глубине относительно удаляемой вершины находится кандидат.
-                        - Ориентироваться на модуль, то есть брать ближайшую по значению вершину.
-                    */
-                    // Стратегия избежать черного листа
-                    let (min_l_n,min_level) = self.find_min((*node.as_ref()).right.unwrap(),0); 
-                    let (max_r_n,max_level) = self.find_max((*node.as_ref()).left.unwrap(),0);
+                    // TODO: Strategy to avoid altitude change
+                    let min_l_n = self.find_min((*node.as_ref()).right.unwrap());
+                    let max_r_n = self.find_max((*node.as_ref()).left.unwrap());
                     if (*min_l_n.as_ref()).is_red {
-                        println!("::1");
-                        // 1
+                        // option 1.0.0
                         std::mem::swap(&mut (*min_l_n.as_ptr()).value, &mut (*node.as_ptr()).value);
                         return self.remove_leaf(min_l_n);
-                    }else{
-                        if let Some(red_left) = (*max_r_n.as_ptr()).left{
+                    } else {
+                        if let Some(red_left) = (*max_r_n.as_ptr()).left {
                             if (*red_left.as_ref()).is_red {
-                                println!("::3");
-                               // 3
-                               std::mem::swap(&mut (*max_r_n.as_ptr()).value, &mut (*node.as_ptr()).value);
-                               std::mem::swap(&mut (*max_r_n.as_ptr()).value, &mut (*red_left.as_ptr()).value);
-                               return self.remove_leaf(red_left);
+                                // option 3.0.0
+                                std::mem::swap(
+                                    &mut (*max_r_n.as_ptr()).value,
+                                    &mut (*node.as_ptr()).value,
+                                );
+                                std::mem::swap(
+                                    &mut (*max_r_n.as_ptr()).value,
+                                    &mut (*red_left.as_ptr()).value,
+                                );
+                                return self.remove_leaf(red_left);
                             }
                         }
                     }
-                    // 2 Иначе черный лист
-                    // Стратегия избежать изменнения высоты (в ветке min_l_n может быть крысный родитель)
-                    // сперва проверить красного родителя он может быть только у min_l_n
-                    match self.operation_remove_black_leaf(&min_l_n){
-                        OperationRemoveBlackLeaf::LeftRedABlackBRedCleaf =>{
-                            println!("RedABlackBRedCleaf");
-                            self.remove_black_leaf_2_1_1_1(min_l_n);
-                        },
-                        OperationRemoveBlackLeaf::LeftRedABlackBleaf => {
-                            self.remove_black_leaf_2_1_2_1(min_l_n);
-                        },
-                        _ => {
-                            unimplemented!("BlackLeaf")
+                    // option 2 black leaf
+                    let mut res = self.remove_node_attempt_avoid_black_leaf(min_l_n);
+                    if !res {
+                        res = self.remove_node_attempt_avoid_black_leaf(max_r_n);
+                        if !res {
+                            res = self.remove_black_leaf(node);
                         }
                     }
-
-                    unimplemented!("BlackLeaf")
-                      
-                },
+                    return res;
+                }
                 OperationRemoveFourOptions::BlackNodeWithRedLeaf => {
                     /*
-                     3.0.0
-                       
-                        X       
-                       //   
+                     option 3.0.0
+
+                        X
+                       //
                        A
 
                     */
-                    println!("BlackNodeWithRedLeaf");
                     let red_left = (*node.as_ptr()).left.unwrap();
                     std::mem::swap(&mut (*node.as_ptr()).value, &mut (*red_left.as_ptr()).value);
                     return self.remove_leaf(red_left);
-                },
-                OperationRemoveFourOptions::Unimplemented =>{
+                }
+                OperationRemoveFourOptions::Unimplemented => {
                     panic!();
                 }
             }
-            
-            false
         }
 
-        unsafe fn find_max(&self, node: NonNull<Node<T>>,level: usize) -> (NonNull<Node<T>>,usize){
-            if (*node.as_ref()).right.is_some(){
-                self.find_max((*node.as_ref()).right.unwrap(),level+1)
-            }else{
-                (node,level)
-            }
-        }
-      
-        unsafe fn find_min(&self, node: NonNull<Node<T>>,level: usize) -> (NonNull<Node<T>>,usize){
-            if (*node.as_ref()).left.is_some(){
-                self.find_min((*node.as_ref()).left.unwrap(),level+1)
-            }else{
-                (node,level)
+        unsafe fn remove_node_attempt_avoid_black_leaf(
+            &mut self,
+            node_x: NonNull<Node<T>>,
+        ) -> bool {
+            match self.operation_remove_black_leaf(&node_x) {
+                OperationRemoveBlackLeaf::LeftRedABlackBRedCleaf => {
+                    println!("2.1.1.1");
+                    self.remove_black_leaf_2_1_1_1_balancing(&node_x);
+                    return self.remove_leaf(node_x);
+                }
+                OperationRemoveBlackLeaf::RightRedABlackBRedCleaf => {
+                    println!("2.1.1.2");
+                    self.remove_black_leaf_2_1_1_2_balancing(&node_x);
+                    return self.remove_leaf(node_x);
+                }
+                OperationRemoveBlackLeaf::LeftRedABlackBleaf => {
+                    println!("2.1.2.1");
+                    self.remove_black_leaf_2_1_2_1_balancing(&node_x);
+                    return self.remove_leaf(node_x);
+                }
+                OperationRemoveBlackLeaf::RightRedABlackBleaf => {
+                    println!("2.1.2.2");
+                    self.remove_black_leaf_2_1_2_2_balancing(&node_x);
+                    return self.remove_leaf(node_x);
+                }
+                OperationRemoveBlackLeaf::BlackARedBWithBlackChildrenRightHaveRedLeaf => {
+                    println!("2.2.1");
+                    self.remove_black_leaf_2_2_1_balancing(&node_x);
+                    return self.remove_leaf(node_x);
+                }
+                OperationRemoveBlackLeaf::BlackARedBWithBlackChildrenLeaf => {
+                    println!("2.2.2");
+                    self.remove_black_leaf_2_2_2_balancing(&node_x);
+                    return self.remove_leaf(node_x);
+                }
+                OperationRemoveBlackLeaf::BlackALeftBlackBRedDleaf => {
+                    println!("2.3.1.1");
+                    self.remove_black_leaf_2_3_1_1_balancing(&node_x);
+                    return self.remove_leaf(node_x);
+                }
+                OperationRemoveBlackLeaf::BlackARightBlackBRedDleaf => {
+                    println!("2.3.1.2");
+                    self.remove_black_leaf_2_3_1_2_balancing(&node_x);
+                    return self.remove_leaf(node_x);
+                }
+                _ => {
+                    return false;
+                }
             }
         }
 
-        unsafe fn remove_leaf(&mut self, node: NonNull<Node<T>>) -> bool{
+        unsafe fn find_max(
+            &self,
+            node: NonNull<Node<T>>
+        ) -> NonNull<Node<T>>{
+            if (*node.as_ref()).right.is_some() {
+                self.find_max((*node.as_ref()).right.unwrap())
+            } else {
+                node
+            }
+        }
+
+        unsafe fn find_min(
+            &self,
+            node: NonNull<Node<T>>,
+        ) -> NonNull<Node<T>>{
+            if (*node.as_ref()).left.is_some() {
+                self.find_min((*node.as_ref()).left.unwrap())
+            } else {
+                node
+            }
+        }
+
+        unsafe fn remove_leaf(&mut self, node: NonNull<Node<T>>) -> bool {
             if let Some(mut parent) = (*node.as_ref()).parent {
                 if let Some(ref mut left) = (*parent.as_mut()).left {
                     if std::ptr::eq(left.as_ptr(), node.as_ptr()) {
                         (*parent.as_mut()).left = None;
-                    }else{
+                    } else {
                         (*parent.as_mut()).right = None;
                     }
-                }else{
+                } else {
                     (*parent.as_mut()).right = None;
                 }
-            } 
+            }
             let _ = Box::from_raw(node.as_ptr());
             true
         }
 
         unsafe fn remove_tree(&mut self, node: Link<T>) {
-            if let Some(node) = node{
+            if let Some(node) = node {
                 self.remove_tree((*node.as_ref()).left);
                 self.remove_tree((*node.as_ref()).right);
-                if self.remove_leaf(node){
+                if self.remove_leaf(node) {
                     assert!(self.count > 0);
                     self.count -= 1;
-                }             
+                }
             }
         }
 
-        /// TODO: open http://www.webgraphviz.com/?tab=map 
+        /// TODO: open http://www.webgraphviz.com/?tab=map
         /// or https://dreampuf.github.io/GraphvizOnline/
         pub fn display(&self) -> String {
-            unsafe{
+            unsafe {
                 let fixed_head = self.fixed_head.unwrap();
                 if let Some(root) = (*fixed_head.as_ptr()).left {
                     return format!("\n\ndigraph Tree {{\n\tratio = fill;\n\tnode [style=filled fontcolor=\"white\"];\n{}}}",display_node(root));
                 }
-                "\nTree is empty".into()                
+                "\nTree is empty".into()
             }
         }
 
@@ -872,62 +983,65 @@ mod llrb {
             black_height: usize,
         ) -> (usize, usize, usize) {
             if let Some(n) = node {
-                let red_red = if is_red && (*n.as_ref()).is_red {
-                    1
-                } else {
-                    0
-                };
-                let black_height = black_height + match (*n.as_ref()).is_red {
-                    false => 1,
-                    _ => 0,
-                };
+                let red_red = if is_red && (*n.as_ref()).is_red { 1 } else { 0 };
+                let black_height = black_height
+                    + match (*n.as_ref()).is_red {
+                        false => 1,
+                        _ => 0,
+                    };
                 let l = self.validate(&(*n.as_ref()).left, (*n.as_ref()).is_red, black_height);
                 let r = self.validate(&(*n.as_ref()).right, (*n.as_ref()).is_red, black_height);
-                (red_red + l.0 + r.0, std::cmp::min(l.1, r.1), std::cmp::max(l.2, r.2))
+                (
+                    red_red + l.0 + r.0,
+                    std::cmp::min(l.1, r.1),
+                    std::cmp::max(l.2, r.2),
+                )
             } else {
                 (0, black_height, black_height)
             }
         }
 
         pub fn helper_is_a_valid_red_black_tree(&self) -> bool {
-            unsafe{
-                let fixed_head = self.fixed_head.unwrap();
-                let result = self.validate(&(*fixed_head.as_ptr()).left, true, 0);
-                let red_red = result.0;
-                let black_height_min = result.1;
-                let black_height_max = result.2;
-                println!("Validation black height = {}",black_height_min);
-                red_red == 0 && black_height_min == black_height_max                
+            if self.node_count() > 0 {
+                unsafe {
+                    let fixed_head = self.fixed_head.unwrap();
+                    let result = self.validate(&(*fixed_head.as_ptr()).left, true, 0);
+                    let red_red = result.0;
+                    let black_height_min = result.1;
+                    let black_height_max = result.2;
+                    println!("Validation black height = {}", black_height_min);
+                    return red_red == 0 && black_height_min == black_height_max;
+                }
             }
+            false
         }
 
-        unsafe fn rotate_left_item(parent: NonNull<Node<T>>, node_a_from_left: bool) -> Link<T>{
-            let node_a = if node_a_from_left{
+        unsafe fn rotate_left_item(parent: NonNull<Node<T>>, node_a_from_left: bool) -> Link<T> {
+            let node_a = if node_a_from_left {
                 (*parent.as_ptr()).left.unwrap()
-            }else{
+            } else {
                 (*parent.as_ptr()).right.unwrap()
             };
-            println!("rotate left node_a={}",(*node_a.as_ptr()).value);
-            let node_c = (*node_a.as_ptr()).right.unwrap();    
-            (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red;// childNode принимает цвет своего parentNode
-            (*node_a.as_ptr()).is_red = true;// цвет parentNode всегда определяется как красный
-            (*node_c.as_ptr()).parent = Some(parent); 
-            if (*node_c.as_ref()).left.is_some(){
+            let node_c = (*node_a.as_ptr()).right.unwrap();
+            (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
+            (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+            (*node_c.as_ptr()).parent = Some(parent);
+            if (*node_c.as_ref()).left.is_some() {
                 let mut node_e = (*node_c.as_ptr()).left;
-                if let Some(ref mut e) = &mut node_e{
+                if let Some(ref mut e) = &mut node_e {
                     (*e.as_ptr()).parent = Some(node_a);
                 }
                 (*node_a.as_ptr()).right = node_e;
-            }else{
+            } else {
                 (*node_a.as_ptr()).right = None;
-            } 
-            (*node_c.as_ptr()).left = Some(node_a); 
+            }
+            (*node_c.as_ptr()).left = Some(node_a);
             (*node_a.as_ptr()).parent = Some(node_c);
-            if node_a_from_left{
+            if node_a_from_left {
                 (*parent.as_ptr()).left = Some(node_c);
                 return (*parent.as_ptr()).left;
-            }else{
-                (*parent.as_ptr()).right = Some(node_c);  
+            } else {
+                (*parent.as_ptr()).right = Some(node_c);
                 return (*parent.as_ptr()).right;
             }
         }
@@ -935,6 +1049,7 @@ mod llrb {
         /*
             Rotate left
 
+               P                  P
                |                  |
                A                  C
               / \\               //\
@@ -943,22 +1058,21 @@ mod llrb {
                 E   D         B   E
 
         */
-        unsafe fn rotate_left_with_parent(mut node_a: NonNull<Node<T>>) -> Link<T>{
-            println!("rotate_left parent is_some node_a={}",(*node_a.as_ref()).value);
-            let parent  = (*node_a.as_ptr()).parent.unwrap();
+        unsafe fn rotate_left_with_parent(node_a: NonNull<Node<T>>) -> Link<T> {
+            let parent = (*node_a.as_ptr()).parent.unwrap();
             let mut node_a_from_left = false;
-            if let Some(p_node_a) = (*parent.as_ptr()).left{
+            if let Some(p_node_a) = (*parent.as_ptr()).left {
                 if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
                     node_a_from_left = true;
-                } 
-            } 
-            return Tree::rotate_left_item( parent, node_a_from_left);
+                }
+            }
+            return Tree::rotate_left_item(parent, node_a_from_left);
         }
 
         /*
             Rotate left
             A is root
-                                   
+
                A                  C
               / \\               //\
              B    C     =>      A   D
@@ -966,57 +1080,89 @@ mod llrb {
                 E   D         B   E
 
         */
-        unsafe fn rotate_left_without_parent(&mut self) -> Link<T>{
+        unsafe fn rotate_left_without_parent(&mut self) -> Link<T> {
             let fixed_head = self.fixed_head.unwrap();
             let node_a = (*fixed_head.as_ptr()).left.unwrap();
-            println!("rotate_left parent is_none node_a={}",(*node_a.as_ref()).value);
-            let node_c = (*node_a.as_ptr()).right.unwrap();   
-            (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red;// childNode принимает цвет своего parentNode
-            (*node_a.as_ptr()).is_red = true;// цвет parentNode всегда определяется как красный
-            if (*node_c.as_ref()).left.is_some(){
+            let node_c = (*node_a.as_ptr()).right.unwrap();
+            (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
+            (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+            if (*node_c.as_ref()).left.is_some() {
                 let mut node_e = (*node_c.as_ptr()).left;
-                if let Some(ref mut e) = &mut node_e{
+                if let Some(ref mut e) = &mut node_e {
                     (*e.as_ptr()).parent = Some(node_a);
                 }
                 (*node_a.as_ptr()).right = node_e;
-            }else{
+            } else {
                 (*node_a.as_ptr()).right = None;
-            } 
-            (*node_c.as_ptr()).left = Some(node_a); 
+            }
+            (*node_c.as_ptr()).left = Some(node_a);
             (*node_a.as_ptr()).parent = Some(node_c);
             (*node_c.as_ptr()).parent = None;
             (*fixed_head.as_ptr()).left = Some(node_c);
-            return (*fixed_head.as_ptr()).left;  
+            return (*fixed_head.as_ptr()).left;
         }
 
-        pub unsafe fn helper_checking_connections(node: Link<T>)->bool{
-            if let Some(n) = node{
-                if (*n.as_ptr()).parent.is_none(){
+        pub unsafe fn helper_checking_connections(node: Link<T>) -> bool {
+            if let Some(n) = node {
+                if (*n.as_ptr()).parent.is_none() {
                     println!("\nROOT:[{}]", (*n.as_ptr()).value);
                 }
-                if (*n.as_ptr()).left.is_some() && (*n.as_ptr()).right.is_some(){
+                if (*n.as_ptr()).left.is_some() && (*n.as_ptr()).right.is_some() {
                     let left = (*n.as_ptr()).left.unwrap();
                     let right = (*n.as_ptr()).right.unwrap();
-                    println!("[{}] <- [{}] -> [{}]",(*left.as_ptr()).value, (*n.as_ptr()).value,(*right.as_ptr()).value);
+                    println!(
+                        "[{}] <- [{}] -> [{}]",
+                        (*left.as_ptr()).value,
+                        (*n.as_ptr()).value,
+                        (*right.as_ptr()).value
+                    );
 
                     let p = (*left.as_ptr()).parent.unwrap();
-                    assert_eq!((*n.as_ptr()).value, (*p.as_ptr()).value,"Нарушена связь с {:?} родителем слева",(*n.as_ptr()).value);
+                    assert_eq!(
+                        (*n.as_ptr()).value,
+                        (*p.as_ptr()).value,
+                        "Нарушена left связь с {:?} родителем",
+                        (*n.as_ptr()).value
+                    );
                     let p = (*right.as_ptr()).parent.unwrap();
-                    assert_eq!((*n.as_ptr()).value, (*p.as_ptr()).value,"Нарушена связь с {:?} родителем справа",(*n.as_ptr()).value);
-                }else if (*n.as_ptr()).left.is_some() && (*n.as_ptr()).right.is_none() {
-                    if let Some(left) = (*n.as_ptr()).left{
-                        println!("[{}] <- [{}] -> [NULL]",(*left.as_ptr()).value,(*n.as_ptr()).value);
+                    assert_eq!(
+                        (*n.as_ptr()).value,
+                        (*p.as_ptr()).value,
+                        "Нарушена right связь с {:?} родителем",
+                        (*n.as_ptr()).value
+                    );
+                } else if (*n.as_ptr()).left.is_some() && (*n.as_ptr()).right.is_none() {
+                    if let Some(left) = (*n.as_ptr()).left {
+                        println!(
+                            "[{}] <- [{}] -> [NULL]",
+                            (*left.as_ptr()).value,
+                            (*n.as_ptr()).value
+                        );
                         let p = (*left.as_ptr()).parent.unwrap();
-                        assert_eq!((*n.as_ptr()).value, (*p.as_ptr()).value,"Нарушена связь с {:?} родителем",(*n.as_ptr()).value);
+                        assert_eq!(
+                            (*n.as_ptr()).value,
+                            (*p.as_ptr()).value,
+                            "Нарушена связь с {:?} родителем",
+                            (*n.as_ptr()).value
+                        );
                     }
-                }else if (*n.as_ptr()).left.is_none() && (*n.as_ptr()).right.is_some() {
-                    if let Some(right) = (*n.as_ptr()).right{
-                        println!("[NULL] <- [{}] -> [{}]",(*n.as_ptr()).value,(*right.as_ptr()).value);
+                } else if (*n.as_ptr()).left.is_none() && (*n.as_ptr()).right.is_some() {
+                    if let Some(right) = (*n.as_ptr()).right {
+                        println!(
+                            "[NULL] <- [{}] -> [{}]",
+                            (*n.as_ptr()).value,
+                            (*right.as_ptr()).value
+                        );
                         let p = (*right.as_ptr()).parent.unwrap();
-                        assert_eq!((*n.as_ptr()).value, (*p.as_ptr()).value,"Нарушена связь с {:?} родителем",(*n.as_ptr()).value);
+                        assert_eq!(
+                            (*n.as_ptr()).value,
+                            (*p.as_ptr()).value,
+                            "Нарушена связь с {:?} родителем",
+                            (*n.as_ptr()).value
+                        );
                     }
-                }else {
-                    println!("[{}]",(*n.as_ptr()).value); 
+                } else {
+                    println!("[{}]", (*n.as_ptr()).value);
                 }
                 Tree::helper_checking_connections((*n.as_ptr()).left);
                 Tree::helper_checking_connections((*n.as_ptr()).right);
@@ -1024,33 +1170,31 @@ mod llrb {
             true
         }
 
-        unsafe fn rotate_right_item(parent: NonNull<Node<T>>, node_a_from_left: bool) -> Link<T>{
-            println!("rotate_right_item parent={} node_a_from_left={}",(*parent.as_ptr()).value,node_a_from_left);
-            let node_a = if node_a_from_left{
+        unsafe fn rotate_right_item(parent: NonNull<Node<T>>, node_a_from_left: bool) -> Link<T> {
+            let node_a = if node_a_from_left {
                 (*parent.as_ptr()).left.unwrap()
-            }else{
+            } else {
                 (*parent.as_ptr()).right.unwrap()
             };
             let node_b = (*node_a.as_ptr()).left.unwrap();
-            (*node_b.as_ptr()).parent = Some(parent); 
-            (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red;// childNode принимает цвет своего parentNode
-            (*node_a.as_ptr()).is_red = true;// цвет parentNode всегда определяется как красный
-            if (*node_b.as_ref()).right.is_some(){
+            (*node_b.as_ptr()).parent = Some(parent);
+            (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
+            (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+            if (*node_b.as_ref()).right.is_some() {
                 let mut node_d = (*node_b.as_ptr()).right;
-                if let Some(ref mut d) = &mut node_d{
+                if let Some(ref mut d) = &mut node_d {
                     (*d.as_ptr()).parent = Some(node_a);
                 }
                 (*node_a.as_ptr()).left = node_d;
-                
-            }else{
+            } else {
                 (*node_a.as_ptr()).left = None;
-            } 
-            (*node_b.as_ptr()).right = Some(node_a); 
+            }
+            (*node_b.as_ptr()).right = Some(node_a);
             (*node_a.as_ptr()).parent = Some(node_b);
-            if node_a_from_left{
+            if node_a_from_left {
                 (*parent.as_ptr()).left = Some(node_b);
                 return (*parent.as_ptr()).left;
-            }else{
+            } else {
                 (*parent.as_ptr()).right = Some(node_b);
                 return (*parent.as_ptr()).right;
             }
@@ -1059,84 +1203,93 @@ mod llrb {
         /*
             Rotate right
 
-                 A               B     
-               // \             / \\   
+                 P               P
+                 |               |
+                 A               B
+               // \             / \\
                B   C     =>    E    A
              // \                  / \
             E    D                D   C
 
         */
-        unsafe fn rotate_right_with_parent(mut node_a: NonNull<Node<T>>) -> Link<T> {
+        unsafe fn rotate_right_with_parent(node_a: NonNull<Node<T>>) -> Link<T> {
             let parent = (*node_a.as_ptr()).parent.unwrap();
-            println!("rotate_right parent is_some node_a={}",(*node_a.as_ref()).value);
             let mut node_a_from_left = false;
-            if let Some(p_node_a) = (*parent.as_ptr()).left{
+            if let Some(p_node_a) = (*parent.as_ptr()).left {
                 if std::ptr::eq(p_node_a.as_ptr(), node_a.as_ptr()) {
                     node_a_from_left = true;
-                } 
-            } 
-            return Tree::rotate_right_item( parent, node_a_from_left);    
+                }
+            }
+            return Tree::rotate_right_item(parent, node_a_from_left);
         }
- 
+
+        /*
+            Rotate right
+            A is root
+
+                 A               B
+               // \             / \\
+               B   C     =>    E    A
+             // \                  / \
+            E    D                D   C
+
+        */
         unsafe fn rotate_right_without_parent(&mut self) -> Link<T> {
             let fixed_head = self.fixed_head.unwrap();
             let node_a = (*fixed_head.as_ptr()).left.unwrap();
-            println!("rotate_right parent is_none node_a={}",(*node_a.as_ref()).value);
             let node_b = (*node_a.as_ptr()).left.unwrap();
-            (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red;// childNode принимает цвет своего parentNode
-            (*node_a.as_ptr()).is_red = true;// цвет parentNode всегда определяется как красный
-            if (*node_b.as_ref()).right.is_some(){
+            (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
+            (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+            if (*node_b.as_ref()).right.is_some() {
                 let mut node_d = (*node_b.as_ptr()).right;
-                if let Some(ref mut d) = &mut node_d{
+                if let Some(ref mut d) = &mut node_d {
                     (*d.as_ptr()).parent = Some(node_a);
                 }
                 (*node_a.as_ptr()).left = node_d;
-            }else{
+            } else {
                 (*node_a.as_ptr()).left = None;
-            } 
-            (*node_b.as_ptr()).right = Some(node_a); 
+            }
+            (*node_b.as_ptr()).right = Some(node_a);
             (*node_a.as_ptr()).parent = Some(node_b);
             (*node_b.as_ptr()).parent = None;
             (*fixed_head.as_ptr()).left = Some(node_b);
-            return (*fixed_head.as_ptr()).left;    
+            return (*fixed_head.as_ptr()).left;
         }
 
-
-        unsafe fn flip_colors(mut node: NonNull<Node<T>>){
-            println!("flip colors node={}",(*node.as_ref()).value);
-            if (*node.as_ref()).left.is_some() && (*node.as_ref()).right.is_some(){
-                if let Some(ref mut left) = (*node.as_mut()).left{
+        unsafe fn flip_colors(mut node: NonNull<Node<T>>) {
+            if (*node.as_ref()).left.is_some() && (*node.as_ref()).right.is_some() {
+                if let Some(ref mut left) = (*node.as_mut()).left {
                     (*left.as_mut()).is_red = false;
                 }
-                if let Some(ref mut right) = (*node.as_mut()).right{
+                if let Some(ref mut right) = (*node.as_mut()).right {
                     (*right.as_mut()).is_red = false;
-                }  
-                (*node.as_mut()).is_red = true;  
-                 
-                if (*node.as_ptr()).parent.is_none(){ 
-                    (*node.as_mut()).is_red = false;  
+                }
+                (*node.as_mut()).is_red = true;
+
+                if (*node.as_ptr()).parent.is_none() {
+                    (*node.as_mut()).is_red = false;
                 }
             }
         }
 
-        unsafe fn check_balancing(node: NonNull<Node<T>>) -> OperationPut{
-            if (*node.as_ref()).right.is_some(){
+        unsafe fn check_balancing(node: NonNull<Node<T>>) -> OperationPut {
+            if (*node.as_ref()).right.is_some() {
                 let r = (*node.as_ref()).right.unwrap();
-                if (*node.as_ref()).left.is_some(){
+                if (*node.as_ref()).left.is_some() {
                     if !(*node.as_ref()).is_red {
                         let l = (*node.as_ref()).left.unwrap();
                         if (*l.as_ref()).is_red && (*r.as_ref()).is_red {
                             return OperationPut::FlipColors;
                         }
                     }
-                } 
-                if(*r.as_ref()).is_red {
+                }
+                if (*r.as_ref()).is_red {
                     return OperationPut::Left;
                 }
             }
-            if (*node.as_ref()).is_red && (*node.as_ref()).left.is_some(){
+            if (*node.as_ref()).is_red && (*node.as_ref()).left.is_some() {
                 let l = (*node.as_ref()).left.unwrap();
-                if (*l.as_ref()).is_red{
+                if (*l.as_ref()).is_red {
                     return OperationPut::Right;
                 }
             }
@@ -1144,638 +1297,116 @@ mod llrb {
         }
 
         pub fn put(&mut self, value: T) -> bool {
-            unsafe{ 
-                if let Some(fixed_head) = self.fixed_head{
-                    let parent = Tree::find_put_parent_candidate( self.get_root(), &value);
-                    if parent.is_some(){
+            unsafe {
+                if self.fixed_head.is_some() {
+                    let parent = Tree::find_put_parent_candidate(self.get_root(), &value);
+                    if parent.is_some() {
                         let parent = parent.unwrap();
-                        if Tree::attach_node( parent, value){
+                        if Tree::attach_node(parent, value) {
                             self.put_balancing(parent);
                         }
-                    }else{
+                    } else {
                         return false;
                     }
-                }else{
-                    self.fixed_head = Node::new_fixed_head(value);   
+                } else {
+                    self.fixed_head = Node::new_fixed_head(value);
                 }
                 self.count += 1;
-                true 
+                true
             }
         }
 
         unsafe fn put_balancing(&mut self, next: NonNull<Node<T>>) {
-            if let Some(fixed_head) = self.fixed_head{
-                let root = (*fixed_head.as_ptr()).left.unwrap();
-                let mut next = next;
-                loop {
-                    //println!("NEXT={}",(*next.as_ptr()).value);
-                    //println!("{}",self.display());
-                    //Tree::checking_connections( Some(root));
-                    
-                    match Tree::check_balancing( next){
-                        OperationPut::Left => {
-                            println!("ROTATE LEFT");
-                            if (*next.as_ptr()).is_red{
-                                println!("будет потом сразу правый поворот и смена цвета, может сразу это сделать?");
+            let mut next = next;
+            loop {
+                match Tree::check_balancing(next) {
+                    OperationPut::Left => {
+                        if (*next.as_ptr()).parent.is_some() {
+                            if let Some(n) = Tree::rotate_left_with_parent(next) {
+                                next = n;
                             }
-                            if (*next.as_ptr()).parent.is_some(){ 
-                                if let Some(n) = Tree::rotate_left_with_parent(next){
-                                    next = n;
-                                } else{
-                                    unimplemented!()
-                                } 
-                            }else{
-                                // next is root
-                                if let Some(n) = self.rotate_left_without_parent(){
-                                    next = n;
-                                } 
-                            }
-                        },
-                        OperationPut::Right => {
-                            println!("ROTATE RIGHT");
-                            if (*next.as_ptr()).parent.is_some(){
-                                let node_a = (*next.as_ptr()).parent.unwrap();
-                                if (*node_a.as_ptr()).parent.is_some(){
-                                    if let Some(n) = Tree::rotate_right_with_parent( node_a){
-                                        next = n;
-                                    } else{
-                                        unimplemented!()
-                                    } 
-                                }else{
-                                    // node_a is root
-                                    if let Some(n) = self.rotate_right_without_parent(){
-                                        next = n;
-                                    }
-                                    
-                                }
-                            }else{
-                                unimplemented!()
-                                // next is root
-                                /*if let Some(n) = self.rotate_right_without_parent(next){
-                                    next = n;
-                                } */
-                            }
-                        },
-                        OperationPut::FlipColors =>{
-                            println!("FLIP COLORS");
-                            Tree::flip_colors(next);
-                            if (*next.as_ptr()).parent.is_some(){
-                                next = (*next.as_ptr()).parent.unwrap();
-                            }else{
-                                break;
-                            }
-                        },
-                        OperationPut::Nothing =>{
-                            println!("NOTHING");
-                            if (*next.as_ptr()).parent.is_some(){
-                                next = (*next.as_ptr()).parent.unwrap();
-                            }else{
-                                break;
+                        } else {
+                            // next is root
+                            if let Some(n) = self.rotate_left_without_parent() {
+                                next = n;
                             }
                         }
-                    }                                    
-                }               
-            }  
+                    }
+                    OperationPut::Right => {
+                        if (*next.as_ptr()).parent.is_some() {
+                            let node_a = (*next.as_ptr()).parent.unwrap();
+                            if (*node_a.as_ptr()).parent.is_some() {
+                                if let Some(n) = Tree::rotate_right_with_parent(node_a) {
+                                    next = n;
+                                }
+                            } else {
+                                // node_a is root
+                                if let Some(n) = self.rotate_right_without_parent() {
+                                    next = n;
+                                }
+                            }
+                        }
+                    }
+                    OperationPut::FlipColors => {
+                        Tree::flip_colors(next);
+                        if (*next.as_ptr()).parent.is_some() {
+                            next = (*next.as_ptr()).parent.unwrap();
+                        } else {
+                            break;
+                        }
+                    }
+                    OperationPut::Nothing => {
+                        if (*next.as_ptr()).parent.is_some() {
+                            next = (*next.as_ptr()).parent.unwrap();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            } 
         }
 
-        unsafe fn find_put_parent_candidate(parent: Link<T>, elem: &T) -> Link<T>{
-            if let Some(parent) = parent{
+        unsafe fn find_put_parent_candidate(parent: Link<T>, elem: &T) -> Link<T> {
+            if let Some(parent) = parent {
                 match elem.cmp(&(*parent.as_ref()).value) {
-                    Ordering::Equal =>{
+                    Ordering::Equal => {
                         return None;
-                    },
-                    Ordering::Less =>{
+                    }
+                    Ordering::Less => {
                         if (*parent.as_ptr()).left.is_some() {
                             return Tree::find_put_parent_candidate((*parent.as_ptr()).left, elem);
-                        }else{
+                        } else {
                             return Some(parent);
                         }
-                    },
+                    }
                     Ordering::Greater => {
                         if (*parent.as_ptr()).right.is_some() {
                             return Tree::find_put_parent_candidate((*parent.as_ptr()).right, elem);
-                        }else{
+                        } else {
                             return Some(parent);
                         }
                     }
                 }
-            }else{
+            } else {
                 return parent;
             }
         }
-        
+
         unsafe fn attach_node(parent: NonNull<Node<T>>, elem: T) -> bool {
             match elem.cmp(&(*parent.as_ref()).value) {
-                Ordering::Equal =>{
+                Ordering::Equal => {
                     return false;
-                },
-                Ordering::Less =>{
-                    println!("--NEW {elem}-- Less={elem} < {p}",elem=elem, p=(*parent.as_ref()).value);
+                }
+                Ordering::Less => {
                     (*parent.as_ptr()).left = Node::new_red(elem, parent);
                     return true;
-                },
+                }
                 Ordering::Greater => {
-                    println!("--NEW {elem}-- Greater={elem} > {p}",elem=elem, p=(*parent.as_ref()).value);
                     (*parent.as_ptr()).right = Node::new_red(elem, parent);
                     return true;
                 }
             }
         }
- 
-        #[cfg(feature = "test-rbt-snapshot")]
-        pub unsafe fn test_left_rotation_with_parent(&mut self){
-            /*
-                Test Left Rotation With Parent
-                -- node C is RED ---
-
-                    P(2)                     P(2)
-                      \                        \
-                     A(6)                     C(8)
-                    /   \\                   //  \
-                B(5)    C(8)      =>       A(6)   D(9)
-                       /   \               /   \
-                      E(7)  D(9)        B(5)   E(7)
-            */
-             
-            // Initialization
-            let mut tree: Tree<i32> = Tree::new();
-            tree.put(2);
-            if let Some(ref mut root) = &mut tree.get_root(){
-              
-                (*root.as_mut()).right = Node::new_black_with_parent(6, *root);// A
-                if let Some(ref mut node_a) = &mut (*root.as_mut()).right{
-                    (*node_a.as_mut()).left = Node::new_black_with_parent(5, *node_a);// B
-
-                    (*node_a.as_mut()).right = Node::new_red(8, *node_a);// C
-
-                    if let Some(ref mut node_c) = &mut (*node_a.as_mut()).right{
-                        (*node_c.as_mut()).left = Node::new_black_with_parent(7, *node_c);// E
-                        (*node_c.as_mut()).right = Node::new_black_with_parent(9, *node_c);// D
-                    }
-                }  
-            }
-
-            // Operation
-            if let Some(root) = tree.get_root(){
-                if let Some(node_a) =  (*root.as_ptr()).right{
-                    tree.put_balancing(node_a);
-                }
-            }
-            
-            // Validation
-            if let Some(ref mut root) = &mut tree.get_root(){
-                {// C
-                    let node_c = (*root.as_ptr()).right.unwrap();
-                    assert_eq!((*node_c.as_ptr()).value, 8);
-                    assert_eq!((*node_c.as_ptr()).is_red, false);
-                    let node_c_parent = (*node_c.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_c_parent.as_ptr()).value, 2);
-
-                    let node_a = (*node_c.as_ptr()).left.unwrap();
-                    assert_eq!((*node_a.as_ptr()).is_red, true);
-                    assert_eq!((*node_a.as_ptr()).value, 6);
-                    let node_a_parent = (*node_a.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_a_parent.as_ptr()).value, 8);
-
-                    let node_d = (*node_c.as_ptr()).right.unwrap();
-                    assert_eq!((*node_d.as_ptr()).value, 9);
-                    let node_d_parent = (*node_d.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_d_parent.as_ptr()).value, 8);
-                }
-                {// A
-                    let node_c = (*root.as_ptr()).right.unwrap();
-                    let node_a = (*node_c.as_ptr()).left.unwrap();
-                    let node_b = (*node_a.as_ptr()).left.unwrap();
-                    let node_e = (*node_a.as_ptr()).right.unwrap();
-                    assert_eq!((*node_b.as_ptr()).value, 5,">>>7");
-                    assert_eq!((*node_e.as_ptr()).value, 7,">>>8");
-                    let node_b_parent = (*node_b.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_b_parent.as_ptr()).value, 6,">>>9");
-                    let node_e_parent = (*node_e.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_e_parent.as_ptr()).value, 6,">>>10");
-                }
-            }
-        }
-   
-        #[cfg(feature = "test-rbt-snapshot")]
-        pub unsafe fn test_left_rotation_without_parent(&mut self) {
-            /*
-                Test Left Rotation Without Parent
-                -- node A is ROOT ---
-                -- node C is RED ---                
-                                               
-                       A(6)                     C(8)
-                      /   \\                   //   \
-                   B(5)    C(8)      =>       A(6)  D(9)
-                          /    \             /   \
-                        E(7)   D(9)        B(5)   E(7)
-            */
-
-            // Initialization
-            let mut tree: Tree<i32> = Tree::new();
-            tree.put(6);
-            if let Some(ref mut root) = &mut tree.get_root(){
-                (*root.as_mut()).left = Node::new_black_with_parent(5, *root);// B
-                (*root.as_mut()).right = Node::new_red(8, *root);// C
-                    
-                if let Some(ref mut node_c) = &mut (*root.as_mut()).right{
-                    (*node_c.as_mut()).left = Node::new_black_with_parent(7, *node_c);// E
-                    (*node_c.as_mut()).right = Node::new_black_with_parent(9, *node_c);// D
-                }  
-            }
-
-            // Operation
-            tree.put_balancing( tree.get_root().unwrap());  
-            
-            // Validation
-            if let Some(ref mut root) = &mut tree.get_root(){
-                {
-                    assert_eq!((*root.as_ptr()).is_red, false);
-                    assert_eq!((*root.as_ptr()).parent, None);
-                    assert_eq!((*root.as_ptr()).value, 8);
-                    let node_d = (*root.as_ptr()).right.unwrap();
-                    assert_eq!((*node_d.as_ptr()).value, 9);
-                    let node_d_parent = (*node_d.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_d_parent.as_ptr()).value, 8);
-    
-                    let node_a = (*root.as_ptr()).left.unwrap();
-                    assert_eq!((*node_a.as_ptr()).is_red, true);  
-                    assert_eq!((*node_a.as_ptr()).value, 6);  
-                    let node_a_parent = (*node_a.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_a_parent.as_ptr()).value, 8);              
-                }
-                {// A
-                    let node_a = (*root.as_ptr()).left.unwrap();
-                    let node_b = (*node_a.as_ptr()).left.unwrap();
-                    let node_e = (*node_a.as_ptr()).right.unwrap();
-                    assert_eq!((*node_b.as_ptr()).value, 5);
-                    assert_eq!((*node_e.as_ptr()).value, 7);
-                    let node_b_parent = (*node_b.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_b_parent.as_ptr()).value, 6);  
-                    let node_e_parent = (*node_e.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_e_parent.as_ptr()).value, 6);
-                }
-            }
-        }
-                
-        #[cfg(feature = "test-rbt-snapshot")]
-        pub unsafe fn test_right_rotation_with_parent_2(&mut self){
-            /*
-                Test Right Rotation With Parent
-                -- node E and B is RED ---
-             
-                         575                         396 
-                        //   \                    /       \
-                      396    792              B(73)        575                      
-                     /    \                   /  \        /   \
-                  A(139)  546               E(7) A(139)  546  792
-                   //   \                        
-                B(73)   C(30)    =>           
-                //                                 
-             E(7)                                 
-            
-            */
-            
-            // Initialization
-            let mut tree = Tree::new();
-            tree.put(575);// P
-            if let Some(ref mut root) = &mut tree.get_root(){
-                (*root.as_mut()).left = Node::new_red(396, *root); 
-                //(*root.as_mut()).right = Node::new_black_with_parent(792, *root); 
-                
-                if let Some(ref mut node) = &mut (*root.as_mut()).left{
-                    //(*node.as_mut()).left = Node::new_black_with_parent(139, *node);// A
-                    //(*node.as_mut()).right = Node::new_black_with_parent(546, *node);// C
-    
-                    if let Some(ref mut node_a) = &mut (*node.as_mut()).left{
-                        //(*node_a.as_mut()).left = Node::new_red(73, *node_a);// B 
-                        if let Some(ref mut node_b) = &mut (*node_a.as_mut()).left{
-                             //(*node_b.as_mut()).left = Node::new_red(7, *node_b);// E
-                        }
-                    }
-                }  
-            }
-            
-            // Operation
-            if let Some(ref mut root) = &mut tree.get_root(){
-                if let Some(ref mut node) = &mut (*root.as_mut()).left{
-                    if let Some(ref mut node_a) = &mut (*node.as_mut()).left{
-                        
-                        if let Some(node) = Tree::rotate_right_with_parent(*node_a){
-                            tree.put_balancing(node);
-                        }
-                    } 
-                }
-            } 
-
-            // Validation
-            unsafe{ Tree::helper_checking_connections(tree.get_root());} 
-        }
-           
-        #[cfg(feature = "test-rbt-snapshot")]
-        pub unsafe fn test_right_rotation_with_parent(&mut self){
-            /*
-                Test Right Rotation With Parent
-                -- node E and B is RED ---
-            
-                 P(5)                      P(5)                           
-                     \                       \\
-                    A(26)                    B(24)
-                   //   \                   /    \
-                B(24)   C(30)    =>      E(15)   A(26)
-                //   \                          /   \
-            E(15)   D(25)                    D(25)  C(30)
-            
-            */
-             
-            // Initialization
-            let mut tree = Tree::new();
-            tree.put(5);// P
-            if let Some(ref mut root) = &mut tree.get_root(){
-                (*root.as_mut()).right = Node::new_black_with_parent(26, *root);// A
-                
-                if let Some(ref mut node_a) = &mut (*root.as_mut()).right{
-                    (*node_a.as_mut()).left = Node::new_red(24, *node_a);// B
-                    (*node_a.as_mut()).right = Node::new_black_with_parent(30, *node_a);// C
-    
-                    if let Some(ref mut node_b) = &mut (*node_a.as_mut()).left{
-                        (*node_b.as_mut()).left = Node::new_red(15, *node_b);// E 
-                        (*node_b.as_mut()).right = Node::new_black_with_parent(25, *node_b);// D
-                    }
-                }  
-            }
-            
-            // Operation
-            if let Some(ref mut root) = &mut tree.get_root(){
-                if let Some(node_a) = &mut (*root.as_mut()).right{
-                    Tree::rotate_right_with_parent( *node_a);
-                }
-            }
-             
-            // Validation
-            if let Some(ref mut root) = &mut tree.get_root(){
-                { // B A ----------------------------------------------------------
-                    let node_b = (*root.as_ptr()).right.unwrap();
-                    //assert_eq!((*node_b.as_ptr()).is_red, true);
-                    assert_eq!((*node_b.as_ptr()).value, 24);
-                    let parent = (*node_b.as_ptr()).parent.unwrap(); 
-                    assert_eq!((*parent.as_ptr()).value, 5);  
-                    let node_e = (*node_b.as_ptr()).left.unwrap(); 
-                    assert_eq!((*node_e.as_ptr()).value, 15); 
-                    
-                    let node_e_parent = (*node_e.as_ptr()).parent.unwrap(); 
-                    assert_eq!((*node_e_parent.as_ptr()).value, 24); 
-                    let node_a = (*node_b.as_ptr()).right.unwrap();
-                    //assert_eq!((*node_a.as_ptr()).is_red, false); 
-                    assert_eq!((*node_a.as_ptr()).value, 26); 
-                    let node_a_parent = (*node_a.as_ptr()).parent.unwrap(); 
-                    assert_eq!((*node_a_parent.as_ptr()).value, 24); 
-                }
-                {//D C ----------------------------------------------------------
-                    let node_b = (*root.as_ptr()).right.unwrap();
-                    let node_a = (*node_b.as_ptr()).right.unwrap();
-                    let node_c = (*node_a.as_ptr()).right.unwrap();
-                    let node_d = (*node_a.as_ptr()).left.unwrap();
-                    assert_eq!((*node_c.as_ptr()).value, 30); 
-                    assert_eq!((*node_d.as_ptr()).value, 25); 
-                    let node_c_parent = (*node_c.as_ptr()).parent.unwrap(); 
-                    assert_eq!((*node_c_parent.as_ptr()).value, 26); 
-                    let node_d_parent = (*node_d.as_ptr()).parent.unwrap(); 
-                    assert_eq!((*node_d_parent.as_ptr()).value, 26); 
-                }
-            }
-        }
-           
-        #[cfg(feature = "test-rbt-snapshot")]
-        pub unsafe fn test_right_rotation_without_parent(&mut self){
-            /*
-                Test Right Rotation Without Parent
-                -- node A is ROOT ---
-                -- node E and B is RED ---
-
-                                                                           
-                    A(26)                   B(24)
-                   //    \                  /    \
-                 B(24)   C(30)   =>     E(15)   A(26)
-                //   \                         /    \
-            E(15)   D(25)                   D(25)  C(30)
-            
-            */
-            
-            // Initialization
-            let mut tree  = Tree::new();
-            tree.put(26);// A
-            if let Some(ref mut root) = &mut tree.get_root(){
-                (*root.as_mut()).left = Node::new_red(24, *root);// B
-                (*root.as_mut()).right = Node::new_black_with_parent(30, *root);// C 
-                
-                if let Some(ref mut node_b) = &mut (*root.as_mut()).left{
-                    (*node_b.as_mut()).left = Node::new_red(15, *node_b);// E
-                    (*node_b.as_mut()).right = Node::new_black_with_parent(25, *node_b);// D
-                }  
-            }
-             
-            // Operation
-            if let Some(root) = tree.get_root(){
-                if let Some(parent) = (*root.as_ptr()).left{
-                    if let Some(node_a) = (*parent.as_ptr()).parent{
-                        if let Some(n) = tree.rotate_right_without_parent(){
-                            Tree::flip_colors(n);
-                        }
-                    }
-                }                
-            }
-            // self.rotate_right(&mut tree.root.unwrap());
-             
-            // Validation
-            if let Some(ref mut root_b) = &mut tree.get_root(){
-                {
-                    assert_eq!((*root_b.as_ptr()).parent, None);
-                    assert_eq!((*root_b.as_ptr()).is_red, false);
-                    assert_eq!((*root_b.as_ptr()).value, 24);
-                    let node_e = (*root_b.as_ptr()).left.unwrap();
-                    assert_eq!((*node_e.as_ptr()).value, 15);
-                    assert_eq!((*node_e.as_ptr()).is_red, false);
-                    let node_e_parent = (*node_e.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_e_parent.as_ptr()).value, 24);  
-    
-                    let node_a = (*root_b.as_ptr()).right.unwrap();
-                    assert_eq!((*node_a.as_ptr()).is_red, false);
-                    assert_eq!((*node_a.as_ptr()).value, 26);
-                    let node_a_parent = (*node_a.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_a_parent.as_ptr()).value, 24);
-                } 
-                { // A ----------------------------------------------------------
-                    let node_a = (*root_b.as_ptr()).right.unwrap();
-                    let node_c = (*node_a.as_ptr()).right.unwrap();
-                    let node_d = (*node_a.as_ptr()).left.unwrap();
-                    assert_eq!((*node_c.as_ptr()).value, 30);
-                    assert_eq!((*node_d.as_ptr()).value, 25);
-                    let node_c_parent = (*node_c.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_c_parent.as_ptr()).value, 26);
-                    let node_d_parent = (*node_d.as_ptr()).parent.unwrap();
-                    assert_eq!((*node_d_parent.as_ptr()).value, 26);
-                }
-            }
-        }
-          
-        #[cfg(feature = "test-rbt-snapshot")]
-        pub unsafe fn test_remove_black_2_2_2(&mut self){
-            /*
-              2.2.2 remove black X 
-
-                  P            P
-                  |            | 
-                  A            B
-                // \          / \
-               B    X   =>   E   A
-              / \               //
-             E   C             C
-
-            */           
-            
-            // Initialization
-            let mut tree  = Tree::new();
-            tree.put(449);
-            if let Some(ref mut root) = &mut tree.get_root(){
-                (*root.as_mut()).left = Node::new_black_with_parent(331, *root);// A
-                (*root.as_mut()).right = Node::new_black_with_parent(755, *root);  
-                
-                if let Some(ref mut node_a) = &mut (*root.as_mut()).left{
-                    (*node_a.as_mut()).left = Node::new_red(119, *node_a);// B 
-                    (*node_a.as_mut()).right = Node::new_black_with_parent(382, *node_a);// X 
-
-                    if let Some(ref mut node_b) = &mut (*node_a.as_mut()).left{
-                        (*node_b.as_mut()).left = Node::new_black_with_parent(118, *node_b);// E 
-                        (*node_b.as_mut()).right = Node::new_black_with_parent(328, *node_b);// C
-                    } 
-                } 
-                if let Some(ref mut node) = &mut (*root.as_mut()).right{
-                    (*node.as_mut()).left = Node::new_black_with_parent(495, *node); 
-                    (*node.as_mut()).right = Node::new_black_with_parent(850, *node); 
-                }
-            }
-             
-            // Operation
-            tree.remove(382);
-
-            
-            // println!("{}",tree.display());
-            
-            // Validation
-            if let Some(ref mut root) = &mut tree.get_root(){
-                assert_eq!((*root.as_ptr()).parent, None);
-                assert_eq!((*root.as_ptr()).is_red, false);
-                assert_eq!((*root.as_ptr()).value, 449);
-
-                // B
-                let node_b = (*root.as_ptr()).left.unwrap();
-                assert_eq!((*node_b.as_ptr()).value, 119);
-                assert_eq!((*node_b.as_ptr()).is_red, false);
-
-                let node_b_parent = (*node_b.as_ptr()).parent.unwrap();
-                assert_eq!((*node_b_parent.as_ptr()).value, 449); 
-                // E
-                let node_e = (*node_b.as_ptr()).left.unwrap();
-                assert_eq!((*node_e.as_ptr()).is_red, false);
-                assert_eq!((*node_e.as_ptr()).value, 118);
-                let node_e_parent = (*node_e.as_ptr()).parent.unwrap();
-                assert_eq!((*node_e_parent.as_ptr()).value, 119); 
-                // A
-                let node_a = (*node_b.as_ptr()).right.unwrap();
-                assert_eq!((*node_a.as_ptr()).is_red, false);
-                assert_eq!((*node_a.as_ptr()).value, 331);
-                let node_a_parent = (*node_a.as_ptr()).parent.unwrap();
-                assert_eq!((*node_a_parent.as_ptr()).value, 119);
-                // C
-                let node_c = (*node_a.as_ptr()).left.unwrap();
-                assert_eq!((*node_c.as_ptr()).value, 328);
-                assert_eq!((*node_c.as_ptr()).is_red, true);
-                let node_c_parent = (*node_c.as_ptr()).parent.unwrap();
-                assert_eq!((*node_c_parent.as_ptr()).value, 331);
-            }
-
-            assert!(tree.helper_is_a_valid_red_black_tree());
-           
-        }
-
-        #[cfg(feature = "test-rbt-snapshot")]
-        pub unsafe fn test_remove_black_2_2_1(&mut self){
-            /*
-              2.2.1 remove black X 
-
-                 P            P
-                 |            | 
-                 A            B
-               // \            \
-              B    X   =>       A
-               \               //
-                C             C
-               //
-              D 
-            */ 
-            
-            // Initialization
-            let mut tree  = Tree::new();
-            tree.put(486);
-            if let Some(ref mut root) = &mut tree.get_root(){
-                (*root.as_mut()).left = Node::new_black_with_parent(324, *root);// A
-                (*root.as_mut()).right = Node::new_black_with_parent(612, *root);  
-                
-                if let Some(ref mut node_a) = &mut (*root.as_mut()).left{
-                    (*node_a.as_mut()).left = Node::new_red(226, *node_a);// B 
-                    (*node_a.as_mut()).right = Node::new_black_with_parent(479, *node_a);// X 
-
-                    if let Some(ref mut node_b) = &mut (*node_a.as_mut()).left{
-                         
-                        (*node_b.as_mut()).right = Node::new_black_with_parent(290, *node_b);// C
-                        if let Some(ref mut node_c) = &mut (*node_b.as_mut()).right{
-                            (*node_c.as_mut()).left = Node::new_red(280, *node_a);// D 
-                        }
-                    } 
-                }  
-            }
-             
-            // Operation
-            tree.remove(479);
-
-            // Validation
-            if let Some(ref mut root) = &mut tree.get_root(){
-                assert_eq!((*root.as_ptr()).parent, None);
-                assert_eq!((*root.as_ptr()).is_red, false);
-                assert_eq!((*root.as_ptr()).value, 486);
-                // C
-                let node_c = (*root.as_ptr()).left.unwrap();
-                assert_eq!((*node_c.as_ptr()).is_red, false);
-                assert_eq!((*node_c.as_ptr()).value, 290);
-                let node_c_parent = (*node_c.as_ptr()).parent.unwrap();
-                assert_eq!((*node_c_parent.as_ptr()).value, 486); 
-
-                // A
-                let node_a = (*node_c.as_ptr()).right.unwrap();
-                assert_eq!((*node_a.as_ptr()).is_red, false);
-                assert_eq!((*node_a.as_ptr()).value, 324);
-                let node_a_parent = (*node_a.as_ptr()).parent.unwrap();
-                assert_eq!((*node_a_parent.as_ptr()).value, 290); 
-                assert_eq!((*node_a.as_ptr()).left, None);
-                assert_eq!((*node_a.as_ptr()).right, None);
-                // B
-                let node_b = (*node_c.as_ptr()).left.unwrap();
-                assert_eq!((*node_b.as_ptr()).is_red, true);
-                assert_eq!((*node_b.as_ptr()).value, 226);
-                let node_b_parent = (*node_b.as_ptr()).parent.unwrap();
-                assert_eq!((*node_b_parent.as_ptr()).value, 290); 
-
-                // D
-                let node_d = (*node_b.as_ptr()).right.unwrap();
-                assert_eq!((*node_d.as_ptr()).is_red, false);
-                assert_eq!((*node_d.as_ptr()).value, 280);
-                assert_eq!((*node_d.as_ptr()).left, None);
-                let node_d_parent = (*node_d.as_ptr()).parent.unwrap();
-                assert_eq!((*node_d_parent.as_ptr()).value, 226); 
-            } 
-        }
-
     }
 
     impl<T: Default + Display> Node<T> {
@@ -1788,7 +1419,7 @@ mod llrb {
                     is_red: false,
                     value: T::default(),
                 })));
-                (*fixed_head.as_ptr()).left = Node::new_black(value);// обратной ссылки на parent нет
+                (*fixed_head.as_ptr()).left = Node::new_black(value); //TODO: без обратной ссылки на parent  
                 Some(fixed_head)
             }
         }
@@ -1804,9 +1435,7 @@ mod llrb {
                 Some(new)
             }
         }
-        // Изначально узел RED. 
-        // Объясняется это тем, что мы всегда сначала добавляем значение к уже существующей ноде 
-        // и только после этого занимаемся балансировкой
+         
         pub fn new_red(value: T, parent: NonNull<Node<T>>) -> Link<T> {
             unsafe {
                 let new = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
@@ -1819,27 +1448,12 @@ mod llrb {
                 Some(new)
             }
         }
-
-        #[cfg(feature = "test-rbt-snapshot")]
-        pub fn new_black_with_parent(value: T, parent: NonNull<Node<T>>) -> Link<T> {
-            unsafe {
-                let new = NonNull::new_unchecked(Box::into_raw(Box::new(Self {
-                    left: None,
-                    right: None,
-                    parent: Some(parent),
-                    is_red: false,
-                    value,
-                })));
-                Some(new)
-            }
-        }
     }
 
-    #[cfg(not(feature = "test-rbt-snapshot"))]
     impl<T: Ord + PartialEq + PartialOrd + Default + Display + Clone + Debug> Drop for Tree<T> {
         fn drop(&mut self) {
             unsafe {
-                if let Some(fixed_head) = self.fixed_head{
+                if let Some(fixed_head) = self.fixed_head {
                     self.remove_tree((*fixed_head.as_ptr()).left);
                     let _ = Box::from_raw(fixed_head.as_ptr());
                 }
@@ -1848,10 +1462,9 @@ mod llrb {
         }
     }
 
-    #[cfg(not(feature = "test-rbt-snapshot"))]
     impl<T: Display> Drop for Node<T> {
         fn drop(&mut self) {
-            println!("Drop Node={}", self.value);
+            //println!("Drop Node={}", self.value);
         }
     }
 
@@ -1863,57 +1476,78 @@ mod llrb {
         unsafe {
             if let Some(fromnode) = fromnode {
                 match value.cmp(&(*fromnode.as_ptr()).value) {
-                    Ordering::Equal =>{
-                        Some(fromnode)
-                    },
-                    Ordering::Less =>{
-                        find_node((*fromnode.as_ptr()).left, value)
-                    },
-                    Ordering::Greater => {
-                        find_node((*fromnode.as_ptr()).right, value)
-                    }
-                } 
+                    Ordering::Equal => Some(fromnode),
+                    Ordering::Less => find_node((*fromnode.as_ptr()).left, value),
+                    Ordering::Greater => find_node((*fromnode.as_ptr()).right, value),
+                }
             } else {
                 fromnode
             }
         }
     }
-  
+
     fn display_node<T: Display>(node: NonNull<Node<T>>) -> String {
         unsafe {
             let mut s: String = "".into();
-            let color = if (*node.as_ptr()).is_red{"[color=\"red\"]"}else{"[color=\"black\"]"};
+            let color = if (*node.as_ptr()).is_red {
+                "[color=\"red\"]"
+            } else {
+                "[color=\"black\"]"
+            };
 
             if let Some(left) = (*node.as_ptr()).left {
-                s.push_str(&format!("\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n", 
-                n1=(*node.as_ptr()).value,
-                n2=(*left.as_ptr()).value,
-                color1=color,
-                color2=if (*left.as_ptr()).is_red{"[color=\"red\"]"}else{"[color=\"black\"]"},
+                s.push_str(&format!(
+                    "\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n",
+                    n1 = (*node.as_ptr()).value,
+                    n2 = (*left.as_ptr()).value,
+                    color1 = color,
+                    color2 = if (*left.as_ptr()).is_red {
+                        "[color=\"red\"]"
+                    } else {
+                        "[color=\"black\"]"
+                    },
                 ));
                 s.push_str(&display_node(left));
-            } else if (*node.as_ptr()).right.is_some(){
-                s.push_str(&format!("\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",n1=(*node.as_ptr()).value,color1=color));
-                s.push_str(&format!("\tnode_null_{n1}[label=\"null\"]\n",n1=(*node.as_ptr()).value));
-            } 
+            } else if (*node.as_ptr()).right.is_some() {
+                s.push_str(&format!(
+                    "\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",
+                    n1 = (*node.as_ptr()).value,
+                    color1 = color
+                ));
+                s.push_str(&format!(
+                    "\tnode_null_{n1}[label=\"null\"]\n",
+                    n1 = (*node.as_ptr()).value
+                ));
+            }
 
             if let Some(right) = (*node.as_ptr()).right {
-                s.push_str(&format!("\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n", 
-                n1=(*node.as_ptr()).value,
-                n2=(*right.as_ptr()).value,
-                color2=if (*right.as_ptr()).is_red{"[color=\"red\"]"}else{"[color=\"black\"]"}, 
-                color1=color));
+                s.push_str(&format!(
+                    "\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n",
+                    n1 = (*node.as_ptr()).value,
+                    n2 = (*right.as_ptr()).value,
+                    color2 = if (*right.as_ptr()).is_red {
+                        "[color=\"red\"]"
+                    } else {
+                        "[color=\"black\"]"
+                    },
+                    color1 = color
+                ));
                 s.push_str(&display_node(right));
-            }else{
-                s.push_str(&format!("\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",n1=(*node.as_ptr()).value,color1=color));
-                s.push_str(&format!("\tnode_null_{}[label=\"null\"]\n",(*node.as_ptr()).value));
+            } else {
+                s.push_str(&format!(
+                    "\t{n1}->node_null_{n1} [color=\"grey\"]; {n1} {color1};\n",
+                    n1 = (*node.as_ptr()).value,
+                    color1 = color
+                ));
+                s.push_str(&format!(
+                    "\tnode_null_{}[label=\"null\"]\n",
+                    (*node.as_ptr()).value
+                ));
             }
             s
         }
     }
-
 }
-
 
 /// $ cargo test red_black_tree_nonnull -- --nocapture
 /// $ cargo test red_black_tree_nonnull --features test-rbt-snapshot -- --nocapture
@@ -1924,37 +1558,44 @@ mod tests {
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_success -- --nocapture
     #[test]
     fn test_success() {
-     
         let mut tree: Tree<i32> = Tree::new();
-        let nodes = vec![ 24,5 ,1  ,15   ,3 ,8     ,13,16];// [24, 5, 6] и [24, 5, 1]
-        let nodes = vec![480,978,379 ,784,999 ,695 ,23,97,309,312,449,958,992,220,95,257,869,959,450,258,315,783,731,914,
-        880,984,734,570,801,908,181,466,238,916,77,801,867,382,943,603,65,545,200,759,158,987,821,630,537,
-        704,149,617,498,261,160,192,760,417,939,757,858,376,885,336,764,443,155,983,586,957,375,
-        893,707,255,811,86,370,384,177,834,177,834,313,209,623,176,875,748,949,529,932,369,385,
-        419,222,719,342,68,156,314,343,262,467,499,604,732,758,765,812,859,876];
+        let nodes = vec![24, 5, 1, 15, 3, 8, 13, 16]; // [24, 5, 6] и [24, 5, 1]
+        let nodes = vec![
+            480, 978, 379, 784, 999, 695, 23, 97, 309, 312, 449, 958, 992, 220, 95, 257, 869, 959,
+            450, 258, 315, 783, 731, 914, 880, 984, 734, 570, 801, 908, 181, 466, 238, 916, 77,
+            801, 867, 382, 943, 603, 65, 545, 200, 759, 158, 987, 821, 630, 537, 704, 149, 617,
+            498, 261, 160, 192, 760, 417, 939, 757, 858, 376, 885, 336, 764, 443, 155, 983, 586,
+            957, 375, 893, 707, 255, 811, 86, 370, 384, 177, 834, 177, 834, 313, 209, 623, 176,
+            875, 748, 949, 529, 932, 369, 385, 419, 222, 719, 342, 68, 156, 314, 343, 262, 467,
+            499, 604, 732, 758, 765, 812, 859, 876,
+        ];
         //let nodes = 0..=44;
         //let nodes = vec![4,9,3,2,1];
-        for i in nodes{
-             tree.put(i);
-             //unsafe{ Tree::checking_connections(tree.get_root());} 
-             assert!(tree.helper_is_a_valid_red_black_tree());
+        for i in nodes {
+            tree.put(i);
+            //unsafe{ Tree::checking_connections(tree.get_root());}
+            assert!(tree.helper_is_a_valid_red_black_tree());
         }
-         
-        println!("After Test:\n{}",tree.display());
-        unsafe{ Tree::helper_checking_connections(tree.get_root());} 
+
+        println!("After Test:\n{}", tree.display());
+        unsafe {
+            Tree::helper_checking_connections(tree.get_root());
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_rotate_right_success -- --nocapture
     #[test]
     fn test_rotate_right_success() {
-       let mut tree: Tree<i32> = Tree::new();
-       let nodes = vec![575,396,139,792,546,73,7 ];
-       for i in nodes{ tree.put(i);}
-        
-       println!("After Test:\n{}",tree.display());
-       unsafe{ Tree::helper_checking_connections(tree.get_root());} 
-       assert!(tree.helper_is_a_valid_red_black_tree());
+        let mut tree: Tree<i32> = Tree::new();
+        let nodes = vec![575, 396, 139, 792, 546, 73, 7];
+        for i in nodes {
+            tree.put(i);
+        }
+        unsafe {
+            Tree::helper_checking_connections(tree.get_root());
+        }
+        assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_find_success -- --nocapture
@@ -1962,38 +1603,20 @@ mod tests {
     fn test_find_success() {
         let mut tree = Tree::new();
         let nodes = 0..=28;
-        for i in nodes{tree.put(i);}
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.contains(4));
     }
-
-    // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_snapshot_success --features test-rbt-snapshot -- --nocapture
-    #[cfg(feature = "test-rbt-snapshot")]
-    #[test]
-    fn test_snapshot_success() {
-        unsafe{
-            let mut tree: Tree<i32> = Tree::new();
-            tree.test_left_rotation_with_parent();
-            let mut tree: Tree<i32> = Tree::new();
-            tree.test_left_rotation_without_parent();
-            let mut tree: Tree<i32> = Tree::new();
-            tree.test_right_rotation_with_parent();
-            let mut tree: Tree<i32> = Tree::new();
-            tree.test_right_rotation_without_parent();
-            let mut tree: Tree<i32> = Tree::new();
-            tree.test_remove_black_2_2_2();
-            let mut tree: Tree<i32> = Tree::new();
-            tree.test_remove_black_2_2_1();
-            let mut tree: Tree<i32> = Tree::new();
-            tree.test_right_rotation_with_parent_2();
-        }
-    }
-    
+ 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_validate_success -- --nocapture
     #[test]
     fn test_validate_success() {
         let mut tree = Tree::new();
         let nodes = 0..=28;
-        for i in nodes{tree.put(i);}
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
@@ -2003,13 +1626,11 @@ mod tests {
     fn test_remove_tree_success() {
         let mut tree = Tree::new();
         let nodes = 1..=6;
-        for i in nodes{tree.put(i);}
-        assert_eq!(6,tree.node_count());
-
-        println!("After Test:\n{}",tree.display());
-        unsafe{ Tree::helper_checking_connections(tree.get_root());} 
-        assert_eq!(0,tree.node_count(),"tree empty");
-        assert!(true);  
+        for i in nodes {
+            tree.put(i);
+        }
+        assert_eq!(6, tree.node_count());
+        assert_eq!(0, tree.node_count(), "tree empty");
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_1_0_0_success -- --nocapture
@@ -2017,29 +1638,35 @@ mod tests {
     fn test_remove_1_0_0_success() {
         let mut tree = Tree::new();
         let nodes = 0..=27;
-        for i in nodes{tree.put(i);}
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(26);
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
- 
+
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_3_0_0_success -- --nocapture
     #[test]
     fn test_remove_3_0_0_success() {
         let mut tree = Tree::new();
         let nodes = 0..=3;
-        for i in nodes{tree.put(i);}
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(3);
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
-  
+
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_node_4_0_0_to_3_0_0_success -- --nocapture
     #[test]
     fn test_remove_node_4_0_0_to_3_0_0_success() {
         let mut tree = Tree::new();
         let nodes = 0..=9;
-        for i in nodes{tree.put(i);}
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(7);
         assert!(tree.helper_is_a_valid_red_black_tree());
@@ -2049,8 +1676,10 @@ mod tests {
     #[test]
     fn test_remove_node_4_0_0_to_1_0_0_success() {
         let mut tree = Tree::new();
-        let nodes = vec![315,897,267,995,843,520];
-        for i in nodes{tree.put(i);}
+        let nodes = vec![315, 897, 267, 995, 843, 520];
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(897);
         assert!(tree.helper_is_a_valid_red_black_tree());
@@ -2058,10 +1687,13 @@ mod tests {
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_1_1_1_success  -- --nocapture
     #[test]
-    fn test_remove_black_2_1_1_1_success() {//2.1.1.1
+    fn test_remove_black_2_1_1_1_success() {
+        //2.1.1.1
         let mut tree = Tree::new();
-        let nodes = vec![314,147,119,331,755,449,118];
-        for i in nodes{tree.put(i);}
+        let nodes = vec![314, 147, 119, 331, 755, 449, 118];
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(314);
         assert!(tree.helper_is_a_valid_red_black_tree());
@@ -2071,23 +1703,27 @@ mod tests {
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_1_1_2_success  -- --nocapture
     #[test]
-    fn test_remove_black_2_1_1_2_success() {//2.1.1.2
+    fn test_remove_black_2_1_1_2_success() {
+        //2.1.1.2
         let mut tree = Tree::new();
-        let nodes = vec![231,511,914,699,532,531];
-        for i in nodes{tree.put(i);}
+        let nodes = vec![231, 511, 914, 699, 532, 531];
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
-        println!("{}",tree.display());
         tree.remove(231);
-        println!("{}",tree.display());
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
- 
+
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_1_2_1_success  -- --nocapture
     #[test]
-    fn test_remove_black_2_1_2_1_success() {//2.1.2.1
+    fn test_remove_black_2_1_2_1_success() {
+        //2.1.2.1
         let mut tree = Tree::new();
-        let nodes = vec![438,440,260,530,34,355];
-        for i in nodes{tree.put(i);}
+        let nodes = vec![438, 440, 260, 530, 34, 355];
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(355);
         assert!(tree.helper_is_a_valid_red_black_tree());
@@ -2095,204 +1731,234 @@ mod tests {
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_1_2_2_success  -- --nocapture
     #[test]
-    fn test_remove_black_2_1_2_2_success() {//2.1.2.2
+    fn test_remove_black_2_1_2_2_success() {
+        //2.1.2.2
         let mut tree = Tree::new();
-        let nodes = vec![231,511,914,699,532];
-        for i in nodes{tree.put(i);}
+        let nodes = vec![231, 511, 914, 699, 532];
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
-        println!("{}",tree.display());
+        println!("{}", tree.display());
         tree.remove(231);
-        println!("{}",tree.display());
         assert!(tree.helper_is_a_valid_red_black_tree());
-
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_2_1_node_a_root_success -- --nocapture
     #[test]
-    fn test_remove_black_2_2_1_node_a_root_success() { 
-      // https://youtu.be/T70nn4EyTrs?t=4320
-      let mut tree = Tree::new();
-      let nodes = vec![315,897,267,995,843,520];
-      for i in nodes{tree.put(i);}
-      assert!(tree.helper_is_a_valid_red_black_tree());
-      tree.remove(995);
-      assert!(tree.helper_is_a_valid_red_black_tree());
-    } 
+    fn test_remove_black_2_2_1_node_a_root_success() {
+        // https://youtu.be/T70nn4EyTrs?t=4320
+        let mut tree = Tree::new();
+        let nodes = vec![315, 897, 267, 995, 843, 520];
+        for i in nodes {
+            tree.put(i);
+        }
+        assert!(tree.helper_is_a_valid_red_black_tree());
+        tree.remove(995);
+        assert!(tree.helper_is_a_valid_red_black_tree());
+    }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_2_1_success -- --nocapture
     #[test]
-    fn test_remove_black_2_2_1_success() { 
+    fn test_remove_black_2_2_1_success() {
         // https://youtu.be/T70nn4EyTrs?t=4320
         let mut tree = Tree::new();
-        let nodes = vec![486,226,612,121,479,69,559,990,290,324,280];
-        for i in nodes{tree.put(i);}
+        let nodes = vec![486, 226, 612, 121, 479, 69, 559, 990, 290, 324, 280];
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(479);
         assert!(!tree.contains(479));
-        assert!(tree.helper_is_a_valid_red_black_tree());  
+        assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_2_2_success -- --nocapture
     #[test]
-    fn test_remove_black_2_2_2_success() { 
+    fn test_remove_black_2_2_2_success() {
         let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![119,331,755,449,118,850,495,382,328];
-        for i in nodes{tree.put(i);}
+        let nodes: Vec<i32> = vec![119, 331, 755, 449, 118, 850, 495, 382, 328];
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(382);
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
+        assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_2_2_root_success -- --nocapture
     #[test]
-    fn test_remove_black_2_2_2_root_success() { 
+    fn test_remove_black_2_2_2_root_success() {
         let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![106,734,951,753,205,730];
-        for i in nodes{tree.put(i);}
+        let nodes: Vec<i32> = vec![106, 734, 951, 753, 205, 730];
+        for i in nodes {
+            tree.put(i);
+        }
         tree.remove(753);
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(951);
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
- 
+
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_1_1_success -- --nocapture
     #[test]
-    fn test_remove_black_2_3_1_1_success() { 
+    fn test_remove_black_2_3_1_1_success() {
         let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![575,396,139,792,546,73,7,6];
-        for i in nodes{tree.put(i);}
+        let nodes: Vec<i32> = vec![575, 396, 139, 792, 546, 73, 7, 6];
+        for i in nodes {
+            tree.put(i);
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(139);
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
+        assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_1_1_root_success -- --nocapture
     #[test]
-    fn test_remove_black_2_3_1_1_root_success() { 
+    fn test_remove_black_2_3_1_1_root_success() {
         let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![106,107,108,105];
-        for i in nodes{tree.put(i);}
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
+        let nodes: Vec<i32> = vec![106, 107, 108, 105];
+        for i in nodes {
+            tree.put(i);
+        }
+        assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(108);
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
+        assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_1_2_success -- --nocapture
     #[test]
-    fn test_remove_black_2_3_1_2_success() { 
+    fn test_remove_black_2_3_1_2_success() {
         let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![575,396,139,792,546,73,7,138];
-        for i in nodes{tree.put(i);}
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
-
+        let nodes: Vec<i32> = vec![575, 396, 139, 792, 546, 73, 7, 138];
+        for i in nodes {
+            tree.put(i);
+        }
+        assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(7);
-
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
+        assert!(tree.helper_is_a_valid_red_black_tree());
     }
- 
+
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_1_2_root_success -- --nocapture
     #[test]
-    fn test_remove_black_2_3_1_2_root_success() { 
+    fn test_remove_black_2_3_1_2_root_success() {
         let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![106,107,109,108 ];
-        for i in nodes{tree.put(i);}
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
+        let nodes: Vec<i32> = vec![106, 107, 109, 108];
+        for i in nodes {
+            tree.put(i);
+        }
+        assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(106);
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
-    }
- 
-    // 2.3.2.1 
-    // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_1_success -- --nocapture
-    #[test]
-    fn test_remove_black_2_3_2_1_success() { 
-        let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![246,562,950,237,417,418,416];
-        for i in nodes{tree.put(i);}
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
-        tree.remove(416);
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
-        //println!("{}",tree.display());
-    }
-/* 
-    // 2.3.2.1 + root
-    #[test]
-    fn test_remove_black_2_3_2_1_root_success() { 
-        let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![5,4,6];
-        for i in nodes{tree.put(i);}
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
-        tree.remove(6);
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
-        //println!("{}",tree.display());
+        assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
-     
+    // 2.3.2.1
+    // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_1_success -- --nocapture
+    #[test]
+    fn test_remove_black_2_3_2_1_success() {
+        let mut tree = Tree::new();
+        let nodes: Vec<i32> = vec![15, 19, 20, 14, 17, 18, 16];
+        for i in nodes {
+            tree.put(i);
+        }
+        assert!(tree.helper_is_a_valid_red_black_tree());
+        tree.remove(20);
+        assert!(tree.helper_is_a_valid_red_black_tree());
+    }
+
+    // 2.3.2.1 + root
+    // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_1_root_success -- --nocapture
+    #[test]
+    fn test_remove_black_2_3_2_1_root_success() {
+        let mut tree = Tree::new();
+        let nodes: Vec<i32> = vec![5, 4, 6];
+        for i in nodes {
+            tree.put(i);
+        }
+        assert!(tree.helper_is_a_valid_red_black_tree());
+        tree.remove(6);
+        assert!(tree.helper_is_a_valid_red_black_tree());
+        println!("{}", tree.display());
+    }
+
     // https://rflinux.blogspot.com/2011/10/red-black-trees.html
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_2_up_to_down_success -- --nocapture
     #[test]
     fn test_remove_black_2_3_2_2_up_to_down_success() {
-        
         let mut tree: Tree<i32> = Tree::new();
-      
-        let nodes = vec![352,873,462,836,316,381,595,288,600,263,310,
-        74,544,621,402,618,61,576,654,579,985,949/*,856,796,894,6,991,880,652,349,525,9,515,371,53*/];
-        for i in nodes{ tree.put(i);}
-            
-        //println!("{}",tree.display());
-        unsafe{Tree::helper_checking_connections(tree.get_root());} 
 
-        //tree.remove(6);
-        //println!("{}",tree.display());
-        // unsafe{Tree::helper_checking_connections(tree.get_root());} 
+        let nodes = vec![
+            352, 873, 462, 836, 316, 381, 595, 288, 600, 263, 310, 74, 544, 621, 402, 618, 61, 576,
+            654, 579, 985, 949, 856, 796, 894, 6, 991, 880, 652, 349, 525, 9, 515, 371, 53,
+        ];
+        for i in nodes {
+            tree.put(i);
+        }
+
+        println!("{}", tree.display());
+        unsafe {
+            Tree::helper_checking_connections(tree.get_root());
+        }
+
+        tree.remove(6);
+        println!("{}", tree.display());
+        assert!(tree.helper_is_a_valid_red_black_tree());
+        unsafe {
+            Tree::helper_checking_connections(tree.get_root());
+        }
     }
-    
-*/
-
-/* 
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_2_start_v5_success -- --nocapture
     #[test]
     fn test_remove_black_2_3_2_2_start_v5_success() {
-        
         let mut tree: Tree<i32> = Tree::new();
-      
-        let nodes = vec![480,978,379,784,398,71,695,23,97,309,312,449,958,992,220,95,257,869,959,450,258,315,783,731,914,
-        880,984,734,570,801,908,181,466,238,916,77,801,867,382,943,603,65,545,200,759,158,987,821,630,537,
-        704,149,617,498,261,160,192,760,417,939,757,858,376,885,336,764,443,155,983,586,957,375,
-        893,707,255,811,86,370,384,177,834,177,834,313,209,623,176,875,748,949,529,932,369,385,
-        419,222,719,342,68,156,314,343,262,467,499,604,732,758,765,812,859,876];
-        for i in nodes{ tree.put(i);}
-            
-        // println!("{}",tree.display());
-        unsafe{Tree::helper_checking_connections(tree.root);} 
+
+        let nodes = vec![
+            480, 978, 379, 784, 398, 71, 695, 23, 97, 309, 312, 449, 958, 992, 220, 95, 257, 869,
+            959, 450, 258, 315, 783, 731, 914, 880, 984, 734, 570, 801, 908, 181, 466, 238, 916,
+            77, 801, 867, 382, 943, 603, 65, 545, 200, 759, 158, 987, 821, 630, 537, 704, 149, 617,
+            498, 261, 160, 192, 760, 417, 939, 757, 858, 376, 885, 336, 764, 443, 155, 983, 586,
+            957, 375, 893, 707, 255, 811, 86, 370, 384, 177, 834, 177, 834, 313, 209, 623, 176,
+            875, 748, 949, 529, 932, 369, 385, 419, 222, 719, 342, 68, 156, 314, 343, 262, 467,
+            499, 604, 732, 758, 765, 812, 859, 876,
+        ];
+        for i in nodes {
+            tree.put(i);
+        }
 
         tree.remove(23);
-        println!("{}",tree.display());
-        // unsafe{Tree::helper_checking_connections(tree.root);} 
+        //println!("{}",tree.display());
+        assert!(tree.helper_is_a_valid_red_black_tree());
+        unsafe {
+            Tree::helper_checking_connections(tree.get_root());
+        }
     }
 
-    // 2.3.2.2 
+    // 2.3.2.2
+    // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_2_success -- --nocapture
     #[test]
-    fn test_remove_black_2_3_2_2_success() { 
+    fn test_remove_black_2_3_2_2_success() {
         let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![246,562,950,237,417,418,416];
-        for i in nodes{tree.put(i);}
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
+        let nodes: Vec<i32> = vec![246, 562, 950, 237, 417, 418, 416];
+        for i in nodes {
+            tree.put(i);
+        }
+        assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(418);
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
-        println!("{}",tree.display());
+        assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
     // 2.3.2.2 + root
+    // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_2_root_success -- --nocapture
     #[test]
-    fn test_remove_black_2_3_2_2_root_success() { 
+    fn test_remove_black_2_3_2_2_root_success() {
         let mut tree = Tree::new();
-        let nodes: Vec<i32> = vec![5,4,6];
-        for i in nodes{tree.put(i);}
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
+        let nodes: Vec<i32> = vec![5, 4, 6];
+        for i in nodes {
+            tree.put(i);
+        }
+        assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(4);
-        assert!(tree.helper_is_a_valid_red_black_tree()); 
-        println!("{}",tree.display());
+        assert!(tree.helper_is_a_valid_red_black_tree());
     }
- */
 }

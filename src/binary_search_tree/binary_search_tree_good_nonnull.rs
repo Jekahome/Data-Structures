@@ -62,10 +62,10 @@ mod ds_binary_tree {
         }
 
         /// Возвращает строковое представление дерева для отладки.
-        /// TODO: open http://www.webgraphviz.com/?tab=map 
+        /// TODO: open http://www.webgraphviz.com/?tab=map
         pub fn display(&self) -> String {
             if let Some(root) = self.root {
-               return format!("digraph Tree {{\n{}}}",display_node(root));
+                return format!("digraph Tree {{\n{}}}", display_node(root));
             }
             "".into()
         }
@@ -422,7 +422,9 @@ mod ds_binary_tree {
     }
 
     #[cfg(feature = "in-order")]
-    impl<'a, T: Ord + PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
+    impl<'a, T: Ord + PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator
+        for &'a Tree<T>
+    {
         type IntoIter = IterInOrder<'a, T>;
         type Item = &'a T;
 
@@ -432,7 +434,9 @@ mod ds_binary_tree {
     }
 
     #[cfg(feature = "pre-order")]
-    impl<'a, T: Ord + PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
+    impl<'a, T: Ord + PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator
+        for &'a Tree<T>
+    {
         type IntoIter = IterPreOrder<'a, T>;
         type Item = &'a T;
 
@@ -442,7 +446,9 @@ mod ds_binary_tree {
     }
 
     #[cfg(feature = "post-order")]
-    impl<'a, T: Ord + PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator for &'a Tree<T> {
+    impl<'a, T: Ord + PartialEq + PartialOrd + Display + Clone> std::iter::IntoIterator
+        for &'a Tree<T>
+    {
         type IntoIter = IterPostOrder<'a, T>;
         type Item = &'a T;
 
@@ -686,20 +692,21 @@ mod ds_binary_tree {
     // ------------------------------------------------------------------
 
     // Вставляет `elem` в новый узел поддерева `node`.
-    fn insert_node<T: Ord + PartialEq + PartialOrd + Display>(node: NonNull<Node<T>>, elem: T) -> bool {
+    fn insert_node<T: Ord + PartialEq + PartialOrd + Display>(
+        node: NonNull<Node<T>>,
+        elem: T,
+    ) -> bool {
         unsafe {
             match elem.cmp(&(*node.as_ptr()).elem) {
-                Ordering::Equal =>{
-                    false
-                },
-                Ordering::Less =>{
+                Ordering::Equal => false,
+                Ordering::Less => {
                     if let Some(left) = (*node.as_ptr()).left {
                         insert_node(left, elem)
                     } else {
                         (*node.as_ptr()).left = Node::new_with_parent(elem, node);
                         true
                     }
-                },
+                }
                 Ordering::Greater => {
                     if let Some(right) = (*node.as_ptr()).right {
                         insert_node(right, elem)
@@ -717,41 +724,54 @@ mod ds_binary_tree {
         unsafe {
             let mut s: String = "".into();
             if let Some(left) = (*node.as_ptr()).left {
-                s.push_str(&format!("{}->{}\n",(*node.as_ptr()).elem,(*left.as_ptr()).elem));
+                s.push_str(&format!(
+                    "{}->{}\n",
+                    (*node.as_ptr()).elem,
+                    (*left.as_ptr()).elem
+                ));
                 s.push_str(&display_node(left));
-            } else if (*node.as_ptr()).right.is_some(){
-                s.push_str(&format!("{}->node_null_{}\n",(*node.as_ptr()).elem, (*node.as_ptr()).elem));
-                s.push_str(&format!("node_null_{}[label=\"NULL\"]\n",(*node.as_ptr()).elem));
+            } else if (*node.as_ptr()).right.is_some() {
+                s.push_str(&format!(
+                    "{}->node_null_{}\n",
+                    (*node.as_ptr()).elem,
+                    (*node.as_ptr()).elem
+                ));
+                s.push_str(&format!(
+                    "node_null_{}[label=\"NULL\"]\n",
+                    (*node.as_ptr()).elem
+                ));
             }
             if let Some(right) = (*node.as_ptr()).right {
-                s.push_str(&format!("{}->{}\n",(*node.as_ptr()).elem,(*right.as_ptr()).elem));
+                s.push_str(&format!(
+                    "{}->{}\n",
+                    (*node.as_ptr()).elem,
+                    (*right.as_ptr()).elem
+                ));
                 s.push_str(&display_node(right));
-            }else{
-                s.push_str(&format!("{}->node_null_{}\n",(*node.as_ptr()).elem, (*node.as_ptr()).elem));
-                s.push_str(&format!("node_null_{}[label=\"NULL\"]\n",(*node.as_ptr()).elem));
+            } else {
+                s.push_str(&format!(
+                    "{}->node_null_{}\n",
+                    (*node.as_ptr()).elem,
+                    (*node.as_ptr()).elem
+                ));
+                s.push_str(&format!(
+                    "node_null_{}[label=\"NULL\"]\n",
+                    (*node.as_ptr()).elem
+                ));
             }
             s
         }
     }
 
     // Находит данные в поддереве `fromnode`.
-    fn find_node<T: Ord + PartialEq + PartialOrd + Display>(
-        fromnode: Link<T>,
-        elem: T,
-    ) -> Link<T> {
+    fn find_node<T: Ord + PartialEq + PartialOrd + Display>(fromnode: Link<T>, elem: T) -> Link<T> {
         unsafe {
             if let Some(fromnode) = fromnode {
                 match elem.cmp(&(*fromnode.as_ptr()).elem) {
-                    Ordering::Equal =>{
-                        Some(fromnode)
-                    },
-                    Ordering::Less =>{
-                        find_node((*fromnode.as_ptr()).left, elem)
-                    },
-                    Ordering::Greater => {
-                        find_node((*fromnode.as_ptr()).right, elem)
-                    }
-                } 
+                    Ordering::Equal => Some(fromnode),
+                    Ordering::Less => find_node((*fromnode.as_ptr()).left, elem),
+                    Ordering::Greater => find_node((*fromnode.as_ptr()).right, elem),
+                }
             } else {
                 fromnode
             }
@@ -1051,9 +1071,8 @@ mod tests {
         tree.insert(11);
 
         let fmt = tree.display();
-        println!("{}",fmt);
+        println!("{}", fmt);
     }
-
 
     #[cfg(feature = "in-order")]
     #[test]

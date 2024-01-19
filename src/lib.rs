@@ -21,7 +21,6 @@ pub use binary_search_tree::{
     binary_search_tree_unsafeall,
 };
 
-
 mod btree;
 pub use btree::*;
 mod graph;

@@ -10,7 +10,6 @@ default = ["in-order"]
 in-order = []
 pre-order = []
 post-order = []
-test-rbt-snapshot = []
 
 [dependencies]
 rand = "^0.8"
