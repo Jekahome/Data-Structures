@@ -66,8 +66,6 @@ mod llrb {
         }
 
         pub fn contains(&self, value: T) -> bool {
-            // каким способом?
-            // должен быть pub
             !find_node(self.get_root(), value).is_none()
         }
 
@@ -226,7 +224,6 @@ mod llrb {
                         }
                     }
                 } else {
-                    // node A is black
                     if let Some(node_b) = (*node_a.as_ref()).left {
                         if !std::ptr::eq(node_b.as_ptr(), node_x.as_ptr()) {
                             if (*node_b.as_ref()).is_red && (*node_b.as_ref()).right.is_some() {
@@ -855,7 +852,7 @@ mod llrb {
                     /*
                       option 4.0.0
 
-                             X
+                            X
                          /      \
                         L        R
                        / \      / \
@@ -1036,8 +1033,8 @@ mod llrb {
                     (*parent.as_ptr()).right.unwrap()
                 };
                 let node_c = (*node_a.as_ptr()).right.unwrap();
-                (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
-                (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+                (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red; 
+                (*node_a.as_ptr()).is_red = true;  
                 (*node_c.as_ptr()).parent = Some(parent);
                 if (*node_c.as_ref()).left.is_some() {
                     let mut node_e = (*node_c.as_ptr()).left;
@@ -1061,8 +1058,8 @@ mod llrb {
                 let fixed_head = self.fixed_head.unwrap();
                 let node_a = (*fixed_head.as_ptr()).left.unwrap();
                 let node_c = (*node_a.as_ptr()).right.unwrap();
-                (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
-                (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+                (*node_c.as_ptr()).is_red = (*node_a.as_ptr()).is_red;  
+                (*node_a.as_ptr()).is_red = true;  
                 if (*node_c.as_ref()).left.is_some() {
                     let mut node_e = (*node_c.as_ptr()).left;
                     if let Some(ref mut e) = &mut node_e {
@@ -1117,8 +1114,8 @@ mod llrb {
                 };
                 let node_b = (*node_a.as_ptr()).left.unwrap();
                 (*node_b.as_ptr()).parent = Some(parent);
-                (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
-                (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+                (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red;  
+                (*node_a.as_ptr()).is_red = true;  
                 if (*node_b.as_ref()).right.is_some() {
                     let mut node_d = (*node_b.as_ptr()).right;
                     if let Some(ref mut d) = &mut node_d {
@@ -1141,8 +1138,8 @@ mod llrb {
                 let fixed_head = self.fixed_head.unwrap();
                 let node_a = (*fixed_head.as_ptr()).left.unwrap();
                 let node_b = (*node_a.as_ptr()).left.unwrap();
-                (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red; // childNode принимает цвет своего parentNode
-                (*node_a.as_ptr()).is_red = true; // цвет parentNode всегда определяется как красный
+                (*node_b.as_ptr()).is_red = (*node_a.as_ptr()).is_red;  
+                (*node_a.as_ptr()).is_red = true;  
                 if (*node_b.as_ref()).right.is_some() {
                     let mut node_d = (*node_b.as_ptr()).right;
                     if let Some(ref mut d) = &mut node_d {
@@ -1315,14 +1312,14 @@ mod llrb {
                         assert_eq!(
                             (*n.as_ptr()).value,
                             (*p.as_ptr()).value,
-                            "Нарушена left связь с {:?} родителем",
+                            "left connection with {:?} parent is broken",
                             (*n.as_ptr()).value
                         );
                         let p = (*right.as_ptr()).parent.unwrap();
                         assert_eq!(
                             (*n.as_ptr()).value,
                             (*p.as_ptr()).value,
-                            "Нарушена right связь с {:?} родителем",
+                            "right connection with {:?} parent is broken",
                             (*n.as_ptr()).value
                         );
                     } else if (*n.as_ptr()).left.is_some() && (*n.as_ptr()).right.is_none() {
@@ -1336,7 +1333,7 @@ mod llrb {
                             assert_eq!(
                                 (*n.as_ptr()).value,
                                 (*p.as_ptr()).value,
-                                "Нарушена связь с {:?} родителем",
+                                "connection with {:?} parent is broken",
                                 (*n.as_ptr()).value
                             );
                         }
@@ -1351,7 +1348,7 @@ mod llrb {
                             assert_eq!(
                                 (*n.as_ptr()).value,
                                 (*p.as_ptr()).value,
-                                "Нарушена связь с {:?} родителем",
+                                "connection with {:?} parent is broken",
                                 (*n.as_ptr()).value
                             );
                         }
@@ -1505,7 +1502,7 @@ mod llrb {
                     is_red: false,
                     value: T::default(),
                 })));
-                (*fixed_head.as_ptr()).left = Node::new_black(value); //TODO: без обратной ссылки на parent
+                (*fixed_head.as_ptr()).left = Node::new_black(value); //TODO: without reference back to parent
                 Some(fixed_head)
             }
         }
