@@ -2094,11 +2094,8 @@ mod tests {
         for i in nodes {
             tree.put(i);
         }
-
         println!("{}", tree.display());
-
         tree.helper_checking_connections();
-
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
