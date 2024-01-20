@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use llrb::{Node, Tree};
+pub use llrb::{Node, Tree};
 mod llrb {
     use std::cmp::Ordering;
     use std::fmt::{self, Debug, Display};
@@ -310,7 +310,7 @@ mod llrb {
         unsafe fn remove_black_leaf_2_1_1_1_balancing(&mut self, node_x: &NonNull<Node<T>>) {
             let node_a = (*node_x.as_ptr()).parent.unwrap();
             let node_b = (*node_a.as_ptr()).left.unwrap();
-            let node_d = (*node_a.as_ptr()).right;
+            let node_d = (*node_b.as_ptr()).right;
             (*node_b.as_ptr()).parent = (*node_a.as_ptr()).parent;
             if let Some(ref mut parent) = (*node_b.as_ptr()).parent {
                 (*parent.as_ptr()).left = Some(node_b);
@@ -1433,7 +1433,6 @@ mod llrb {
         }
     }
 
-    // Находит данные в поддереве `fromnode`.
     fn find_node<T: Ord + PartialEq + PartialOrd + Display>(
         fromnode: Link<T>,
         value: T,
@@ -1514,8 +1513,7 @@ mod llrb {
     }
 }
 
-/// $ cargo test red_black_tree_nonnull -- --nocapture
-/// $ cargo test red_black_tree_nonnull --features pre-order -- --nocapture
+/// $ cargo test red_black_tree_nonnull -- --test-threads=1
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1631,7 +1629,7 @@ mod tests {
         tree.remove(7);
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
-
+ 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_node_4_0_0_to_1_0_0_success -- --nocapture
     #[test]
     fn test_remove_node_4_0_0_to_1_0_0_success() {
@@ -1648,23 +1646,29 @@ mod tests {
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_1_1_1_success  -- --nocapture
     #[test]
     fn test_remove_black_2_1_1_1_success() {
-        //2.1.1.1
         let mut tree = Tree::new();
         let nodes = vec![314, 147, 119, 331, 755, 449, 118];
         for i in nodes {
             tree.put(i);
         }
         assert!(tree.helper_is_a_valid_red_black_tree());
-        tree.remove(314);
+        
+        tree.remove(314);//2.1.1.1
+ 
+        unsafe {
+            Tree::helper_checking_connections(tree.get_root());
+        }
         assert!(tree.helper_is_a_valid_red_black_tree());
-        tree.remove(147);
+        tree.remove(147);// 2.1.2.1
         assert!(tree.helper_is_a_valid_red_black_tree());
+        unsafe {
+            Tree::helper_checking_connections(tree.get_root());
+        }
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_1_1_2_success  -- --nocapture
     #[test]
     fn test_remove_black_2_1_1_2_success() {
-        //2.1.1.2
         let mut tree = Tree::new();
         let nodes = vec![231, 511, 914, 699, 532, 531];
         for i in nodes {
@@ -1678,7 +1682,6 @@ mod tests {
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_1_2_1_success  -- --nocapture
     #[test]
     fn test_remove_black_2_1_2_1_success() {
-        //2.1.2.1
         let mut tree = Tree::new();
         let nodes = vec![438, 440, 260, 530, 34, 355];
         for i in nodes {
@@ -1692,7 +1695,6 @@ mod tests {
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_1_2_2_success  -- --nocapture
     #[test]
     fn test_remove_black_2_1_2_2_success() {
-        //2.1.2.2
         let mut tree = Tree::new();
         let nodes = vec![231, 511, 914, 699, 532];
         for i in nodes {
@@ -1707,7 +1709,6 @@ mod tests {
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_2_1_node_a_root_success -- --nocapture
     #[test]
     fn test_remove_black_2_2_1_node_a_root_success() {
-        // https://youtu.be/T70nn4EyTrs?t=4320
         let mut tree = Tree::new();
         let nodes = vec![315, 897, 267, 995, 843, 520];
         for i in nodes {
@@ -1721,7 +1722,6 @@ mod tests {
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_2_1_success -- --nocapture
     #[test]
     fn test_remove_black_2_2_1_success() {
-        // https://youtu.be/T70nn4EyTrs?t=4320
         let mut tree = Tree::new();
         let nodes = vec![486, 226, 612, 121, 479, 69, 559, 990, 290, 324, 280];
         for i in nodes {
@@ -1812,7 +1812,6 @@ mod tests {
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
-    // 2.3.2.1
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_1_success -- --nocapture
     #[test]
     fn test_remove_black_2_3_2_1_success() {
@@ -1826,7 +1825,6 @@ mod tests {
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
-    // 2.3.2.1 + root
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_1_root_success -- --nocapture
     #[test]
     fn test_remove_black_2_3_2_1_root_success() {
@@ -1841,7 +1839,6 @@ mod tests {
         println!("{}", tree.display());
     }
 
-    // https://rflinux.blogspot.com/2011/10/red-black-trees.html
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_2_up_to_down_success -- --nocapture
     #[test]
     fn test_remove_black_2_3_2_2_up_to_down_success() {
@@ -1887,14 +1884,13 @@ mod tests {
         }
 
         tree.remove(23);
-        //println!("{}",tree.display());
+
         assert!(tree.helper_is_a_valid_red_black_tree());
         unsafe {
             Tree::helper_checking_connections(tree.get_root());
         }
     }
 
-    // 2.3.2.2
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_2_success -- --nocapture
     #[test]
     fn test_remove_black_2_3_2_2_success() {
@@ -1908,7 +1904,6 @@ mod tests {
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
-    // 2.3.2.2 + root
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_remove_black_2_3_2_2_root_success -- --nocapture
     #[test]
     fn test_remove_black_2_3_2_2_root_success() {
