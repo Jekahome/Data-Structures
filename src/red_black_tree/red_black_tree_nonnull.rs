@@ -1,12 +1,7 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
-
 pub use llrb::{Node, Tree};
 mod llrb {
     use std::cmp::Ordering;
-    use std::fmt::{self, Debug, Display};
-    use std::hash::{Hash, Hasher};
-    use std::iter::FromIterator;
+    use std::fmt::{Debug, Display};
     use std::marker::PhantomData;
     use std::ptr::NonNull;
 
@@ -39,7 +34,6 @@ mod llrb {
         BlackLeaf,
         NodeWithChildren,
         BlackNodeWithRedLeaf,
-        Unimplemented,
     }
 
     enum OperationRemoveBlackLeaf {
@@ -916,9 +910,6 @@ mod llrb {
                     let red_left = (*node.as_ptr()).left.unwrap();
                     std::mem::swap(&mut (*node.as_ptr()).value, &mut (*red_left.as_ptr()).value);
                     return self.remove_leaf(red_left);
-                }
-                OperationRemove::Unimplemented => {
-                    panic!();
                 }
             }
         }
@@ -2041,7 +2032,7 @@ mod llrb {
 
     #[cfg(feature = "in-order")]
     impl<T: Ord + PartialEq + PartialOrd + Default + Display + Clone + Debug> Debug for Tree<T> {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             f.debug_list().entries(self).finish()
         }
     }
@@ -2071,8 +2062,10 @@ mod llrb {
     }
 
     #[cfg(feature = "in-order")]
-    impl<T: Hash + Ord + PartialEq + PartialOrd + Default + Display + Clone + Debug> Hash for Tree<T> {
-        fn hash<H: Hasher>(&self, state: &mut H) {
+    impl<T: std::hash::Hash + Ord + PartialEq + PartialOrd + Default + Display + Clone + Debug>
+        std::hash::Hash for Tree<T>
+    {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
             self.node_count().hash(state);
             for item in self {
                 item.hash(state);
