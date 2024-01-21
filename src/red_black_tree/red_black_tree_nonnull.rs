@@ -104,6 +104,15 @@ mod llrb {
             }
         }
 
+        pub fn find(&self, value: T) -> Link<T> {
+            unsafe {
+                if let Some(fixed_head) = self.fixed_head{
+                    return find_node((*fixed_head.as_ptr()).left, value);
+                }
+                None
+            }
+        }
+
         /// Найти следующий элемент данного элемента в дереве.  
         /// Симметричный поиск в глубину (In-order).
         #[cfg(feature = "in-order")]
@@ -1547,11 +1556,11 @@ mod llrb {
 
     impl<T: Display> Drop for Node<T> {
         fn drop(&mut self) {
-            println!("Drop Node={}", self.value);
+            //println!("Drop Node={}", self.value);
         }
     }
 
-    fn find_node<T: Ord + PartialEq + PartialOrd + Display>(
+    pub fn find_node<T: Ord + PartialEq + PartialOrd + Display>(
         fromnode: Link<T>,
         value: T,
     ) -> Link<T> {

@@ -2,22 +2,26 @@
 
 use ds::{stack_array, stack_linked_list, stack_vec, red_black_tree_nonnull};
 
+/*
+Есть ли смысл паралелить поиск?
+Время вставки/поиска
+*/
 use red_black_tree_nonnull::Tree;
+use std::time::{Duration, Instant};
+use std::thread::sleep; 
+
 fn main() {
     
     let mut tree: Tree<i32> = Tree::new();
-    let nodes = vec![
-        480, 978, 379, 784, 999, 695, 23, 97, 309, 312, 449, 958, 992, 220, 95, 257, 869, 959,
-        450, 258, 315, 783, 731, 914, 880, 984, 734, 570, 801, 908, 181, 466, 238, 916, 77,
-        801, 867, 382, 943, 603, 65, 545, 200, 759, 158, 987, 821, 630, 537, 704, 149, 617,
-        498, 261, 160, 192, 760, 417, 939, 757, 858, 376, 885, 336, 764, 443, 155, 983, 586,
-        957, 375, 893, 707, 255, 811, 86, 370, 384, 177, 834, 177, 834, 313, 209, 623, 176,
-        875, 748, 949, 529, 932, 369, 385, 419, 222, 719, 342, 68, 156, 314, 343, 262, 467,
-        499, 604, 732, 758, 765, 812, 859, 876,
-    ];
-    for i in nodes {
+    
+    for i in 0..100 {
         tree.put(i);
     }
+    let value = 55;
+    let now = Instant::now();
+    tree.find(value);
+    println!("Find {} micros", now.elapsed().as_micros());
     assert!(tree.helper_is_a_valid_red_black_tree());
 }
 
+  
