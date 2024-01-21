@@ -104,10 +104,12 @@ mod llrb {
             }
         }
 
-        pub fn find(&self, value: T) -> Link<T> {
+        pub fn find(&self, value: T) -> Option<&T> {
             unsafe {
                 if let Some(fixed_head) = self.fixed_head{
-                    return find_node((*fixed_head.as_ptr()).left, value);
+                    if let Some(node) = find_node((*fixed_head.as_ptr()).left, value){
+                        return Some(&(*node.as_ptr()).value);
+                    }
                 }
                 None
             }
