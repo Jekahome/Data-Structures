@@ -161,16 +161,9 @@ impl BetterDeviceRegistry {
     }
 
     fn check(&self, a: &IoTDevice, b: &IoTDevice) -> RBOperation {
-        /*if a.numerical_id <= b.numerical_id {println!("LeftNode");
-            RBOperation::LeftNode
-        } else {println!("RightNode");
-            RBOperation::RightNode
-        }*/
         if a.numerical_id <= b.numerical_id {
-            println!("LeftNode");
             RBOperation::RightNode
         } else {
-            println!("RightNode");
             RBOperation::LeftNode
         }
     }
@@ -500,7 +493,7 @@ mod tests {
     #[test]
     fn test_success() {
         let mut tree = BetterDeviceRegistry::new_empty();
-        let nodes = vec![24, 5, 1, 26, 15, 3, 8 /* ,13,16*/];
+        let nodes = vec![24, 5, 1, 26, 15, 3, 8 ,13,16];
         let nodes = 1..=9;
         for i in nodes {
             let s = format!("{}", i);
