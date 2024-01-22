@@ -761,7 +761,7 @@ mod llrb {
              P           P
              |           |
              A           A
-            / \   =>    //   => next check node P
+            / \   =>    //   => next check node A
            B   X       B
 
         */
@@ -779,7 +779,7 @@ mod llrb {
             2.3.2.2 remove black X
 
               A            B
-             / \   =>    // \    =>  next check node P
+             / \   =>    // \    =>  next check node B
             X   B       A    D
                / \       \
               C   D       C
@@ -1249,6 +1249,8 @@ mod llrb {
         }
 
         /*
+          Flip color 
+
              |          ||
              A    =>    A
            // \\       / \
