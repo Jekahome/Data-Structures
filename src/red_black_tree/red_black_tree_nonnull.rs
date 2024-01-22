@@ -1,4 +1,4 @@
-pub use llrb::{Node, Tree};
+pub use llrb::{Node, Tree, helper_prepare_batch_put};
 mod llrb {
     use std::cmp::Ordering;
     use std::fmt::{Debug, Display};
@@ -65,7 +65,7 @@ mod llrb {
             self.count
         }
 
-        pub fn contains(&self, value: T) -> bool {
+        pub fn contains(&self, value: &T) -> bool {
             !find_node(self.get_root(), value).is_none()
         }
 
@@ -88,11 +88,11 @@ mod llrb {
                 true
             }
         }
-
+ 
         pub fn remove(&mut self, value: T) -> bool {
             unsafe {
                 let fixed_head = self.fixed_head.unwrap();
-                if let Some(node) = find_node((*fixed_head.as_ptr()).left, value) {
+                if let Some(node) = find_node((*fixed_head.as_ptr()).left, &value) {
                     if !self.remove_node(node) {
                         return false;
                     }
@@ -107,7 +107,7 @@ mod llrb {
         pub fn find(&self, value: T) -> Option<&T> {
             unsafe {
                 if let Some(fixed_head) = self.fixed_head{
-                    if let Some(node) = find_node((*fixed_head.as_ptr()).left, value){
+                    if let Some(node) = find_node((*fixed_head.as_ptr()).left, &value){
                         return Some(&(*node.as_ptr()).value);
                     }
                 }
@@ -120,7 +120,7 @@ mod llrb {
         #[cfg(feature = "in-order")]
         pub fn successor_dfs_in_order(&self, value: T) -> Option<&T> {
             unsafe {
-                let node = find_node(self.get_root(), value);
+                let node = find_node(self.get_root(), &value);
                 if let Some(n) = node {
                     if let Some(nodesucc) = dfs_in_order::successor_of_node_in_order(n) {
                         return Some(&(*nodesucc.as_ref()).value);
@@ -1009,6 +1009,92 @@ mod llrb {
         }
 
         /*
+           Rotate left and Rotate right and Flip color
+        
+               |              ||
+               P              C
+             //  \          /   \
+            A     F        A     P
+           / \\      =>   / \   / \
+          B   C          B   E D   F
+             / \
+            E   D
+        */
+        unsafe fn rotate_left_right_flip_color(&mut self, node_a: NonNull<Node<T>>) -> Link<T> {
+            let node_p = (*node_a.as_ptr()).parent.unwrap();
+            if let Some(parent) = (*node_p.as_ptr()).parent {
+                let mut node_p_from_left = false;
+                if let Some(p_node_p) = (*parent.as_ptr()).left {
+                    if std::ptr::eq(p_node_p.as_ptr(), node_p.as_ptr()) {
+                        node_p_from_left = true;
+                    }
+                }
+                let node_p = if node_p_from_left {
+                    (*parent.as_ptr()).left.unwrap()
+                } else {
+                    (*parent.as_ptr()).right.unwrap()
+                };  
+                //let node_a = (*node_p.as_ptr()).left.unwrap();
+                (*node_a.as_ptr()).is_red = false;
+                let node_c = (*node_a.as_ptr()).right.unwrap();
+                (*node_c.as_ptr()).is_red = false;
+                let node_e = (*node_c.as_ptr()).left;
+                let node_d = (*node_c.as_ptr()).right;
+
+                (*node_c.as_ptr()).is_red = true;
+
+                (*node_c.as_ptr()).parent = Some(parent);
+                (*node_c.as_ptr()).left = Some(node_a);
+                (*node_a.as_ptr()).parent = Some(node_c);
+                (*node_c.as_ptr()).right = Some(node_p);
+                (*node_p.as_ptr()).parent = Some(node_c);
+                (*node_p.as_ptr()).left = node_d;
+                if let Some(n_d) = node_d{
+                    (*n_d.as_ptr()).parent = Some(node_p);
+                }
+                (*node_a.as_ptr()).right = node_e;
+                if let Some(n_e) = node_e{
+                    (*n_e.as_ptr()).parent = Some(node_a);
+                }
+                if node_p_from_left {
+                    (*parent.as_ptr()).left = Some(node_c);
+                } else {
+                    (*parent.as_ptr()).right = Some(node_c);
+                } 
+                return Some(parent);
+            }else {
+                let fixed_head = self.fixed_head.unwrap();
+                let node_p = (*fixed_head.as_ptr()).left.unwrap();
+
+                let node_a = (*node_p.as_ptr()).left.unwrap();
+                (*node_a.as_ptr()).is_red = false;
+                let node_c = (*node_a.as_ptr()).right.unwrap();
+                (*node_c.as_ptr()).is_red = false;
+                let node_e = (*node_c.as_ptr()).left;
+                let node_d = (*node_c.as_ptr()).right;
+
+                (*node_c.as_ptr()).is_red = false;
+
+                (*node_c.as_ptr()).parent = None;
+                (*node_c.as_ptr()).left = Some(node_a);
+                (*node_a.as_ptr()).parent = Some(node_c);
+                (*node_c.as_ptr()).right = Some(node_p);
+                (*node_p.as_ptr()).parent = Some(node_c);
+                (*node_p.as_ptr()).left = node_d;
+                if let Some(n_d) = node_d{
+                    (*n_d.as_ptr()).parent = Some(node_p);
+                }
+                (*node_a.as_ptr()).right = node_e;
+                if let Some(n_e) = node_e{
+                    (*n_e.as_ptr()).parent = Some(node_a);
+                }
+                (*fixed_head.as_ptr()).left = Some(node_c);
+                  
+                return (*fixed_head.as_ptr()).left;
+            }
+        }
+
+        /*
             Rotate left without parent
             A is root
 
@@ -1217,14 +1303,20 @@ mod llrb {
 
         unsafe fn put_balancing(&mut self, next: NonNull<Node<T>>) {
             let mut next = next;
-            loop {
-                match self.check_put_balancing(next) {
-                    OperationPut::Left => {
-                        if let Some(n) = self.rotate_left(next) {
-                            next = n;
+            loop { 
+                match self.check_put_balancing(next) { 
+                    OperationPut::Left => { 
+                        if (*next.as_ptr()).is_red {
+                            if let Some(n) = self.rotate_left_right_flip_color(next) {
+                                next = n;
+                            }  
+                        }else{
+                            if let Some(n) = self.rotate_left(next) {
+                                next = n;
+                            }                            
                         }
                     }
-                    OperationPut::Right => {
+                    OperationPut::Right => { 
                         if (*next.as_ptr()).parent.is_some() {
                             let node_a = (*next.as_ptr()).parent.unwrap();
                             if let Some(n) = self.rotate_right(node_a) {
@@ -1232,7 +1324,7 @@ mod llrb {
                             }
                         }
                     }
-                    OperationPut::FlipColors => {
+                    OperationPut::FlipColors => { 
                         self.flip_colors(next);
                         if (*next.as_ptr()).parent.is_some() {
                             next = (*next.as_ptr()).parent.unwrap();
@@ -1241,11 +1333,7 @@ mod llrb {
                         }
                     }
                     OperationPut::Nothing => {
-                        if (*next.as_ptr()).parent.is_some() {
-                            next = (*next.as_ptr()).parent.unwrap();
-                        } else {
-                            break;
-                        }
+                        break;
                     }
                 }
             }
@@ -1564,7 +1652,7 @@ mod llrb {
 
     pub fn find_node<T: Ord + PartialEq + PartialOrd + Display>(
         fromnode: Link<T>,
-        value: T,
+        value: &T,
     ) -> Link<T> {
         unsafe {
             if let Some(fromnode) = fromnode {
@@ -1577,6 +1665,35 @@ mod llrb {
                 fromnode
             }
         }
+    }
+
+    /// Data preparation to reduce balancing operations
+    pub fn helper_prepare_batch_put<T: Ord + Copy>(src_l: &mut Vec<T>) -> Vec<T>{
+        let mut ret: Vec<T> = Vec::with_capacity(src_l.len());
+        src_l.sort();   
+        let middle = src_l[src_l.len()/2]; 
+          
+        if let Ok(index) = src_l.binary_search(&middle){
+            let src_r = src_l.split_off(index);
+                 
+            let mut index_max = 0;
+            let mut index_min = src_l.len()-1;
+            loop { 
+                if index_max < src_r.len(){
+                    ret.push(src_r[index_max]);  
+                    index_max+=1;
+                }
+                if index_min+1 != 0{
+                    ret.push(src_l[index_min]);  
+                    if index_min > 0{index_min-=1;}
+                }
+                
+                if index_max >= src_r.len() && index_min <= 0{
+                    break;
+                }
+            }
+        }
+        ret
     }
 
     fn helper_display_tree<T: Display>(node: NonNull<Node<T>>) -> String {
@@ -2093,18 +2210,20 @@ mod tests {
     #[test]
     fn test_success() {
         let mut tree: Tree<i32> = Tree::new();
-        let nodes = vec![
+        let mut nodes = vec![
             480, 978, 379, 784, 999, 695, 23, 97, 309, 312, 449, 958, 992, 220, 95, 257, 869, 959,
-            450, 258, 315, 783, 731, 914, 880, 984, 734, 570, 801, 908, 181, 466, 238, 916, 77,
+            450, 258, 315, 783, 731, 914, 880 , 984, 734, 570, 801, 908, 181, 466, 238, 916, 77,
             801, 867, 382, 943, 603, 65, 545, 200, 759, 158, 987, 821, 630, 537, 704, 149, 617,
-            498, 261, 160, 192, 760, 417, 939, 757, 858, 376, 885, 336, 764, 443, 155, 983, 586,
+            498, 261, 160, 192, 760, 417, 939 , 757, 858, 376, 885, 336, 764, 443, 155, 983, 586,
             957, 375, 893, 707, 255, 811, 86, 370, 384, 177, 834, 177, 834, 313, 209, 623, 176,
-            875, 748, 949, 529, 932, 369, 385, 419, 222, 719, 342, 68, 156, 314, 343, 262, 467,
-            499, 604, 732, 758, 765, 812, 859, 876,
+            875, 748, 949, 529, 932, 369, 385, 419, 222, 719, 342, 68, 156, 314, 343, 262 , 467,
+            499, 604, 732, 758, 765, 812, 859, 876, 
         ];
+        let nodes: Vec<i32> = helper_prepare_batch_put(&mut nodes);
         for i in nodes {
             tree.put(i);
         }
+        
         println!("{}", tree.display());
         tree.helper_checking_connections();
         assert!(tree.helper_is_a_valid_red_black_tree());
@@ -2118,9 +2237,7 @@ mod tests {
         for i in nodes {
             tree.put(i);
         }
-
         tree.helper_checking_connections();
-
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
@@ -2132,7 +2249,7 @@ mod tests {
         for i in nodes {
             tree.put(i);
         }
-        assert!(tree.contains(4));
+        assert!(tree.contains(&4));
     }
 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_validate_success -- --nocapture
@@ -2293,7 +2410,7 @@ mod tests {
         }
         assert!(tree.helper_is_a_valid_red_black_tree());
         tree.remove(479);
-        assert!(!tree.contains(479));
+        assert!(!tree.contains(&479));
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
 
