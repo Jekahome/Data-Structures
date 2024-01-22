@@ -8,7 +8,6 @@ use std::time::Instant;
  
 fn main() {
     
-    let mut value = 0;
     let size =  16_777_216; 
     let mut src = Vec::with_capacity(size);
     let mut for_find = vec![];

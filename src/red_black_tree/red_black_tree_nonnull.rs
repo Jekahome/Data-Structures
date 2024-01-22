@@ -1034,15 +1034,12 @@ mod llrb {
                 } else {
                     (*parent.as_ptr()).right.unwrap()
                 };  
-                //let node_a = (*node_p.as_ptr()).left.unwrap();
                 (*node_a.as_ptr()).is_red = false;
                 let node_c = (*node_a.as_ptr()).right.unwrap();
                 (*node_c.as_ptr()).is_red = false;
                 let node_e = (*node_c.as_ptr()).left;
                 let node_d = (*node_c.as_ptr()).right;
-
                 (*node_c.as_ptr()).is_red = true;
-
                 (*node_c.as_ptr()).parent = Some(parent);
                 (*node_c.as_ptr()).left = Some(node_a);
                 (*node_a.as_ptr()).parent = Some(node_c);
@@ -1072,9 +1069,7 @@ mod llrb {
                 (*node_c.as_ptr()).is_red = false;
                 let node_e = (*node_c.as_ptr()).left;
                 let node_d = (*node_c.as_ptr()).right;
-
                 (*node_c.as_ptr()).is_red = false;
-
                 (*node_c.as_ptr()).parent = None;
                 (*node_c.as_ptr()).left = Some(node_a);
                 (*node_a.as_ptr()).parent = Some(node_c);
@@ -1089,7 +1084,6 @@ mod llrb {
                     (*n_e.as_ptr()).parent = Some(node_a);
                 }
                 (*fixed_head.as_ptr()).left = Some(node_c);
-                  
                 return (*fixed_head.as_ptr()).left;
             }
         }
