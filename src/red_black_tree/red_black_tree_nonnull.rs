@@ -1495,7 +1495,7 @@ mod llrb {
             }
             false
         }
-
+        /// DOT specification.
         /// TODO: open http://www.webgraphviz.com/?tab=map
         /// or https://dreampuf.github.io/GraphvizOnline/
         pub fn display(&self) -> String {
