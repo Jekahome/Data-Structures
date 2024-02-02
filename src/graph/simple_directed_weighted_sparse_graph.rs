@@ -553,9 +553,9 @@ mod sdws_graph {
 mod tests {
     use super::*;
 
-    // $ cargo test graph::simple_directed_weighted_sparse_graph::tests::test_rand_success -- --nocapture
+    // $ cargo test graph::simple_directed_weighted_sparse_graph::tests::test_dijkstras_success -- --nocapture
     #[test]
-    fn test_rand_success() {
+    fn test_dijkstras_success() {
         use rand::{thread_rng, Rng};
         let indexes = 100_000; //16_777_216;
         let mut rng = thread_rng();
