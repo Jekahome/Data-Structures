@@ -16,6 +16,4 @@ bfs = []
 rand = "^0.8"
 futures = "0.3"
 
-simple_graph_algorithms = "1.0.0"
-dijkstra = "0.1"
-nalgebra = "0.10.1"
+ 

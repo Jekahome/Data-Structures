@@ -163,9 +163,11 @@ mod graph {
             path.reverse();
             path
         }
+
         pub fn get_vertex(&self, index: &IndexVertex) -> Option<&Vertex<T, W>> {
             self.vertexes.get_vertex(index)
         }
+
         fn get_mut_vertex(&mut self, index: &IndexVertex) -> Option<&mut Vertex<T, W>> {
             self.vertexes.get_mut_vertex(index)
         }
@@ -180,10 +182,8 @@ mod graph {
             if !self.vertexes.contains(&start_vertex) {
                 return ();
             }
-
             let index_start_vertex = self.vertexes.find(&start_vertex).unwrap();
             deque.push_back(&index_start_vertex);
-
             while !deque.is_empty() {
                 index_vertex = deque.pop_front().unwrap();
                 let vertex = self.vertexes.get_vertex(index_vertex).unwrap();
@@ -286,9 +286,7 @@ mod graph {
 
         pub fn dijkstras_algorithm(&mut self, from: &T, to: &T) -> Option<(W, Vec<&T>)> {
             self.vertexes.reset_dijkstras();
-
             let start_weight = W::default();
-
             if !self.vertexes.contains(from) || !self.vertexes.contains(to) {
                 return None;
             }
@@ -311,15 +309,12 @@ mod graph {
                     ));
                 }
             }
-
             while index_queue_visit < queue_visit.len() {
                 let (next_vertex,mut sum_weight, previous_vertex) = queue_visit[index_queue_visit];
                 index_queue_visit+=1;
-
                 let from_vertex = self.vertexes.get_mut_vertex(&next_vertex);
                 if from_vertex.is_some() {
                     let from_vertex = from_vertex.unwrap();
-
                     if let Some(ref mut sw) = &mut from_vertex.sum_weight {
                         if sw > &mut sum_weight {
                             *sw = sum_weight;
@@ -332,7 +327,6 @@ mod graph {
                     }
                     if !from_vertex.visited {
                         from_vertex.visited = true;
-
                         for index_edge in from_vertex.edges.iter() {
                             if let Some(edge) = self.edges.get_edge(index_edge) {
                                 queue_visit.push((
@@ -345,7 +339,6 @@ mod graph {
                     }
                 }
             }
-
             let index_to_vertex = self.vertexes.find(to).unwrap();
             let vertex = self.vertexes.get_vertex(&index_to_vertex).unwrap();
             if vertex.sum_weight.is_none() {
@@ -369,9 +362,11 @@ mod graph {
                 visited: false,
             }
         }
+
         pub fn add_edge(&mut self, index: IndexEdge) {
             self.edges.push(index);
         }
+
         fn eq(&self, payload: &T) -> bool {
             &self.payload == payload
         }
@@ -386,6 +381,7 @@ mod graph {
                 to_vertex,
             }
         }
+
         fn eq(&self, weight: &W, from_vertex: &IndexVertex, to_vertex: &IndexVertex) -> bool {
             &self.weight == weight
                 && &self.from_vertex == from_vertex
@@ -400,6 +396,7 @@ mod graph {
                 vertexes: Vec::with_capacity(size),
             }
         }
+
         fn contains(&self, payload: &T) -> bool {
             self.vertexes
                 .iter()
@@ -413,6 +410,7 @@ mod graph {
                 .count()
                 > 0
         }
+
         fn find(&self, payload: &T) -> Option<IndexVertex> {
             self.vertexes
                 .iter()
@@ -426,10 +424,12 @@ mod graph {
                 .and_then(|el| Some(el))
                 .map(|el| IndexVertex(el))
         }
+
         fn add(&mut self, vertex: Vertex<T, W>) -> IndexVertex {
             self.vertexes.push(Some(vertex));
             IndexVertex(self.vertexes.len() - 1)
         }
+
         fn get_vertex(&self, index: &IndexVertex) -> Option<&Vertex<T, W>> {
             if let Some(vertex) = self.vertexes.get(index.0) {
                 return vertex.as_ref();
@@ -443,9 +443,11 @@ mod graph {
             }
             None
         }
+
         fn vertexes(&self) -> &Vec<Option<Vertex<T, W>>> {
             &self.vertexes
         }
+
         fn reset_dijkstras(&mut self) {
             for vertex in self.vertexes.iter_mut() {
                 if let Some(vertex) = vertex {
@@ -455,9 +457,11 @@ mod graph {
                 }
             }
         }
+
         fn mut_vertexes(&mut self) -> &mut Vec<Option<Vertex<T, W>>> {
             &mut self.vertexes
         }
+
         fn size(&self) ->usize{
             self.vertexes.len()
         }
@@ -470,6 +474,7 @@ mod graph {
                 edges: Vec::with_capacity(size),
             }
         }
+
         fn contains(&self, weight: &W, from_vertex: &IndexVertex, to_vertex: &IndexVertex) -> bool {
             self.edges
                 .iter()
@@ -483,6 +488,7 @@ mod graph {
                 .count()
                 > 0
         }
+
         fn find(
             &self,
             weight: &W,
@@ -501,10 +507,12 @@ mod graph {
                 .and_then(|el| Some(el))
                 .map(|el| IndexEdge(el))
         }
+
         fn add(&mut self, edge: Edge<W>) -> IndexEdge {
             self.edges.push(Some(edge));
             IndexEdge(self.edges.len() - 1)
         }
+
         fn get_edge(&self, index: &IndexEdge) -> Option<&Edge<W>> {
             if let Some(edge) = self.edges.get(index.0) {
                 return edge.as_ref();
@@ -585,92 +593,35 @@ mod tests {
 
         if let Some((sum_weight, mut path)) = graph.dijkstras_algorithm(&from, &to) {
             println!("WEIGHT={}", sum_weight);
-            /*println!("WEIGHT={} path={:?}\n",sum_weight, &path);
             let path: Vec<i32> = path.iter_mut().map(|p|p.clone()).collect();
-            println!("Display Graph:{}",graph.display_with_path(path));*/
+            println!("Display Graph:{}",graph.display_with_path(path));
         } else {
             println!("the vertices are not connected");
         }
     }
 
-    // $ cargo test graph::simple_directed_weighted_sparse_graph::tests::test_success -- --nocapture
+    // $ cargo test graph::simple_directed_weighted_sparse_graph::tests::test_bfs_success -- --nocapture
     #[test]
-    fn test_success() {
+    fn test_bfs_success() {
         let data: Vec<PrepareInput<String, u8>> = vec![
-            PrepareInput::new("A0".to_string(), Some(("B1".to_string(), 4))), // A 0
+            PrepareInput::new("A0".to_string(), Some(("B1".to_string(), 4))),  // A 0
             PrepareInput::new("B1".to_string(), Some(("D2".to_string(), 10))), // B 1, D 2
-            PrepareInput::new("D2".to_string(), Some(("F3".to_string(), 11))), //  F 3
-            PrepareInput::new("A0".to_string(), Some(("C4".to_string(), 2))), // C 4
+            PrepareInput::new("D2".to_string(), Some(("F3".to_string(), 11))), // F 3
+            PrepareInput::new("A0".to_string(), Some(("C4".to_string(), 2))),  // C 4
             PrepareInput::new("B1".to_string(), Some(("C4".to_string(), 5))),
-            PrepareInput::new("C4".to_string(), Some(("E5".to_string(), 3))), // E 5
+            PrepareInput::new("C4".to_string(), Some(("E5".to_string(), 3))),  // E 5
             PrepareInput::new("E5".to_string(), Some(("D2".to_string(), 4))),
         ];
         let mut graph: Graph<String, u8> = Graph::new(10);
-
         for el in data {
             graph.add(el);
         }
-
-        /*println!("Display Graph:{}",graph.display());
-
+        println!("Display Graph:{}",graph.display());
         let mut vertexes = vec![];
         graph.breadth_first_search_with_deque("A0".to_string(),&mut vertexes);
         println!("\nBreadth fist search:");
         for vertex in vertexes{
             print!("{}-",vertex);
         }
-        println!("\n");*/
-
-        if let Some((sum_weight, mut path)) =
-            graph.dijkstras_algorithm(&"A0".to_string(), &"F3".to_string())
-        {
-            println!(
-                "dijkstras_algorithm sum_weight={:?} path={:?}\n",
-                sum_weight, &path
-            );
-            let path: Vec<String> = path.iter_mut().map(|p| p.to_owned()).collect();
-            println!("Display Graph:{}", graph.display_with_path(path));
-        } else {
-            println!("the vertices are not connected");
-        }
-
-        println!("\n--------------------------------------\n");
-
-        /*let vertex = graph.get_vertex(&IndexVertex::new(2)).unwrap();
-        println!("vertex D2 sum_weight={:?} path={:?}\n",vertex.sum_weight,vertex.path);
-        let path = vertex.path.clone().unwrap();
-        graph.path_display(path);
-        println!("\n--------------------------------------\n");*/
-    }
-
-    // $ cargo test graph::simple_directed_weighted_sparse_graph::tests::test_crate_simple_graph_algorithms -- --nocapture
-    #[test]
-    fn test_crate_simple_graph_algorithms() {
-        // https://github.com/LMH01/simple_graph_algorithms/blob/master/src/lib.rs
-        use simple_graph_algorithms::{algorithms::dijkstra, Graph};
-        let mut graph = Graph::new();
-
-        // Add new nodes to the graph
-        graph.add_node("A");
-        graph.add_node("B");
-        graph.add_node("C");
-        graph.add_node("D");
-        graph.add_node("E");
-        graph.add_node("F");
-
-        // Add edges to the graph
-        graph.add_edge(4, &"A", &"B"); // Adds an edge that leads from a to b with weight 1
-        graph.add_edge(10, &"B", &"D");
-        graph.add_edge(11, &"D", &"F");
-        graph.add_edge(2, &"A", &"C");
-        graph.add_edge(5, &"B", &"C");
-        graph.add_edge(3, &"C", &"E");
-        graph.add_edge(4, &"E", &"D");
-
-        // Calculate the shortest path tree starting at node "a" using Dijkstra's algorithm
-        let spt = dijkstra(&mut graph, &"A").unwrap();
-
-        // Get the shortest distance from "a" to other nodes
-        assert_eq!(spt.shortest_distance(&"F"), Some(20));
     }
 }
