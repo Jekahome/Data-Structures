@@ -1,8 +1,10 @@
 #![allow(dead_code)]
+#![allow(unused_imports)]
+
 // Простой направленный взвешенный разреженные граф
 
-use graph::*;
-mod graph {
+use sdws_graph::{Graph, Vertex, Edge, IndexVertex, IndexEdge, PrepareInput};
+mod sdws_graph {
     use std::cmp::Ordering;
     use std::collections::VecDeque;
     use std::fmt::{Debug, Display};
@@ -10,6 +12,7 @@ mod graph {
 
     #[derive(Debug, PartialEq, Clone, Copy)]
     pub struct IndexEdge(usize);
+
     #[derive(Debug, PartialEq, Clone, Copy)]
     pub struct IndexVertex(usize);
 
@@ -136,7 +139,7 @@ mod graph {
             self.vertexes.add(vertex)
         }
 
-        pub fn add_edge(&mut self, edge: Edge<W>) -> IndexEdge {
+        fn add_edge(&mut self, edge: Edge<W>) -> IndexEdge {
             self.edges.add(edge)
         }
 
@@ -153,7 +156,6 @@ mod graph {
                         end_vertex = vertex.previous_vertex;
                     }
                 } else {
-                    end_vertex = None;
                     break;
                 }
             }
@@ -353,7 +355,7 @@ mod graph {
 
     /// Vertex
     impl<T: PartialEq, W> Vertex<T, W> {
-        pub fn new(payload: T) -> Self {
+        fn new(payload: T) -> Self {
             Self {
                 payload,
                 edges: Vec::with_capacity(1),
@@ -363,7 +365,7 @@ mod graph {
             }
         }
 
-        pub fn add_edge(&mut self, index: IndexEdge) {
+        fn add_edge(&mut self, index: IndexEdge) {
             self.edges.push(index);
         }
 
@@ -374,7 +376,7 @@ mod graph {
 
     /// Edge
     impl<W: PartialEq> Edge<W> {
-        pub fn new(weight: W, from_vertex: IndexVertex, to_vertex: IndexVertex) -> Self {
+        fn new(weight: W, from_vertex: IndexVertex, to_vertex: IndexVertex) -> Self {
             Self {
                 weight,
                 from_vertex,
@@ -570,6 +572,7 @@ mod tests {
                     break;
                 }
                 let from = vertexes[index] as i32;
+                #[allow(unused_assignments)]
                 let mut to: i32 = -1i32;
                 loop {
                     let i = rng.gen_range(0..indexes);
