@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-// Простой направленный взвешенный разреженные граф
+// Простой направленный взвешенный разреженный граф
 
 use sdws_graph::{Graph, IndexVertex, PrepareInput, Vertex};
 mod sdws_graph {
