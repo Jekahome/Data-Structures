@@ -483,7 +483,7 @@ mod sdws_graph {
     }
 }
 
-/// $ cargo miri test
+/// $ cargo +nightly miri test simple_directed_weighted_sparse_graph
 /// $ cargo test simple_directed_weighted_sparse_graph -- --nocapture
 #[cfg(test)]
 mod tests {

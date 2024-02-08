@@ -54,6 +54,7 @@ mod ds_queue {
     }
 }
 
+/// $ cargo +nightly miri test queue_vec
 /// $ cargo test queue_vec
 #[cfg(test)]
 mod tests {

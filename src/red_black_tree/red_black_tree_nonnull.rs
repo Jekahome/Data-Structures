@@ -2197,6 +2197,7 @@ mod llrb {
     }
 }
 
+/// $ cargo +nightly miri test red_black_tree_nonnull
 /// $ cargo test red_black_tree_nonnull -- --test-threads=1
 /// $ cargo test red_black_tree_nonnull --no-default-features --features pre-order -- --nocapture
 /// $ cargo test red_black_tree_nonnull --no-default-features --features post-order -- --nocapture

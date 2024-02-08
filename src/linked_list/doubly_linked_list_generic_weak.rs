@@ -279,6 +279,7 @@ mod ds_doubly_linked_list_generic_weak {
     }
 }
 
+/// $ cargo +nightly miri test doubly_linked_list_generic_weak
 /// $ cargo test doubly_linked_list_generic_weak -- --nocapture
 #[cfg(test)]
 mod tests {

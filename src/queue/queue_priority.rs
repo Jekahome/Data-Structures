@@ -221,6 +221,7 @@ mod ds_queue_priority {
     }
 }
 
+/// $ cargo +nightly miri test queue_priority
 /// $ cargo test queue_priority  
 #[cfg(test)]
 mod tests {

@@ -801,7 +801,7 @@ mod ds_doubly_linked_list_prod_unsafe {
     }
 }
 
-/// $ cargo +nightly miri test
+/// $ cargo +nightly miri test doubly_linked_list_prod_unsafe
 /// $ cargo test doubly_linked_list_prod_unsafe
 #[cfg(test)]
 mod test {

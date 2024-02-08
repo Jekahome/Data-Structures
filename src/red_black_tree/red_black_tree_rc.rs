@@ -485,6 +485,7 @@ impl BetterDeviceRegistry {
     }
 }
 
+/// $ cargo +nightly miri test red_black_tree_rc  (FAILED !!!)
 /// $ cargo test red_black_tree_rc -- --nocapture
 #[cfg(test)]
 mod tests {

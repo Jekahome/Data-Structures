@@ -292,6 +292,7 @@ fn parent_with_left(node: *mut Node) -> *mut Node {
     }
 }
 
+/// $ cargo +nightly miri test binary_search_tree_unsafeall
 /// $ cargo test binary_search_tree_unsafeall -- --nocapture
 #[cfg(test)]
 mod tests {

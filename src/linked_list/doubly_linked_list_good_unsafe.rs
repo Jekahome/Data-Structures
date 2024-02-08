@@ -135,7 +135,7 @@ mod ds_doubly_linked_list_good_unsafe {
     }
 }
 
-/// $ cargo +nightly miri test
+/// $ cargo +nightly miri test doubly_linked_list_good_unsafe
 /// $ cargo test doubly_linked_list_good_unsafe
 #[cfg(test)]
 mod test {

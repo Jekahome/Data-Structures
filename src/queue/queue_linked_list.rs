@@ -102,6 +102,7 @@ mod ds_queue_rc {
     }
 }
 
+/// $ cargo +nightly miri test queue_linked_list
 /// $ cargo test queue_linked_list
 #[cfg(test)]
 mod tests {
