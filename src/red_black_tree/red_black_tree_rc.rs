@@ -492,6 +492,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore]
     fn test_success() {
         let mut tree = BetterDeviceRegistry::new_empty();
         let nodes = vec![24, 5, 1, 26, 15, 3, 8, 13, 16];

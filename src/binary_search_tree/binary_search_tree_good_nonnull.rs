@@ -416,7 +416,7 @@ mod ds_binary_tree {
 
     impl<T: Display> Drop for Node<T> {
         fn drop(&mut self) {
-            println!("Drop Node={}", self.elem);
+           // println!("Drop Node={}", self.elem);
         }
     }
 

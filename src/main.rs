@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 
-use ds::{red_black_tree_nonnull, stack_array, stack_linked_list, stack_vec};
+use ds::{red_black_tree_nonnull, stack_array, stack_linked_list, stack_vec, binary_search_tree_good_nonnull};
 
 use red_black_tree_nonnull::Tree;
 use std::time::Instant;
