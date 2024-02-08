@@ -1,13 +1,16 @@
 #![allow(unused_imports)]
 
-use ds::{red_black_tree_nonnull, stack_array, stack_linked_list, stack_vec, binary_search_tree_good_nonnull, red_black_tree_vec};
+use ds::{
+    binary_search_tree_good_nonnull, red_black_tree_nonnull, red_black_tree_vec, stack_array,
+    stack_linked_list, stack_vec,
+};
 
 use std::time::Instant;
 
-fn main(){
+fn main() {
     cmp_llrb_vs_vec();
-    
-    cmp_llrb_ptr_vs_vec(); 
+
+    cmp_llrb_ptr_vs_vec();
 }
 
 /*
@@ -79,14 +82,12 @@ fn cmp_llrb_vs_vec() {
     );
 }
 
-
 /*
 LLRB ptr Insert :21378 millis
 
 LLRB Vec Insert :24780 millis
 */
-fn cmp_llrb_ptr_vs_vec(){
-     
+fn cmp_llrb_ptr_vs_vec() {
     let size = 16_777_216;
     let mut src = Vec::with_capacity(size);
     let mut for_find = vec![];
@@ -103,7 +104,7 @@ fn cmp_llrb_ptr_vs_vec(){
             break;
         }
     }
-     
+
     let now = Instant::now();
     let mut tree = red_black_tree_nonnull::Tree::new();
     for i in src.iter() {
@@ -112,7 +113,6 @@ fn cmp_llrb_ptr_vs_vec(){
     println!("LLRB ptr Insert :{} millis", now.elapsed().as_millis());
     assert!(tree.helper_is_a_valid_red_black_tree());
 
-
     let now = Instant::now();
     let mut tree = red_black_tree_vec::Tree::new(src.len());
     for i in src.iter() {
@@ -120,5 +120,4 @@ fn cmp_llrb_ptr_vs_vec(){
     }
     println!("LLRB Vec Insert :{} millis", now.elapsed().as_millis());
     assert!(tree.helper_is_a_valid_red_black_tree());
-
 }

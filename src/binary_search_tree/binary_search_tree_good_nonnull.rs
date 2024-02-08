@@ -212,12 +212,12 @@ mod ds_binary_tree {
 
         /// Удаляем данный элемент из дерева; возвращает true, если такой узел был
         /// найдено и удалено, в противном случае — false.
-        pub fn remove(&mut self, elem: T) -> bool {   
-            if let Some(node) = find_node(self.root, elem) { 
+        pub fn remove(&mut self, elem: T) -> bool {
+            if let Some(node) = find_node(self.root, elem) {
                 self.remove_node(node);
                 self.count -= 1;
                 true
-            } else { 
+            } else {
                 false
             }
         }
@@ -280,22 +280,22 @@ mod ds_binary_tree {
         }
 
         fn remove_node(&mut self, node: NonNull<Node<T>>) {
-            unsafe { 
+            unsafe {
                 let left = (*node.as_ref()).left;
                 let right = (*node.as_ref()).right;
-                if left.is_none() && right.is_none() { 
+                if left.is_none() && right.is_none() {
                     // У узла нет дочерних элементов, поэтому его можно безопасно удалить.
                     self.remove_leaf(node);
                 } else if left.is_some() && right.is_none() {
                     self.replace_node(node, left);
                 } else if left.is_none() && right.is_some() {
                     self.replace_node(node, right);
-                } else if left.is_some() && right.is_some() { 
-                   let replace_node = self.find_replace_node(left.unwrap());
-                   (*node.as_ptr()).elem = (*replace_node.as_ptr()).elem.clone();
-                    if (*replace_node.as_ptr()).left.is_some(){
+                } else if left.is_some() && right.is_some() {
+                    let replace_node = self.find_replace_node(left.unwrap());
+                    (*node.as_ptr()).elem = (*replace_node.as_ptr()).elem.clone();
+                    if (*replace_node.as_ptr()).left.is_some() {
                         self.replace_node(replace_node, (*replace_node.as_ptr()).left);
-                    }else{
+                    } else {
                         self.remove_leaf(replace_node);
                     }
                 } else {
@@ -303,14 +303,14 @@ mod ds_binary_tree {
                 }
             }
         }
-        unsafe fn find_replace_node(&self, node: NonNull<Node<T>> ) -> NonNull<Node<T>>{
-            if let Some(right) = (*node.as_ptr()).right{
+        unsafe fn find_replace_node(&self, node: NonNull<Node<T>>) -> NonNull<Node<T>> {
+            if let Some(right) = (*node.as_ptr()).right {
                 return self.find_replace_node(right);
-            }else{
-               return node;
+            } else {
+                return node;
             }
         }
-        fn remove_leaf(&mut self, node: NonNull<Node<T>>) -> bool{
+        fn remove_leaf(&mut self, node: NonNull<Node<T>>) -> bool {
             unsafe {
                 if (*node.as_ref()).left.is_some() || (*node.as_ref()).right.is_some() {
                     panic!("node is not leaf");
@@ -416,7 +416,7 @@ mod ds_binary_tree {
 
     impl<T: Display> Drop for Node<T> {
         fn drop(&mut self) {
-           // println!("Drop Node={}", self.elem);
+            // println!("Drop Node={}", self.elem);
         }
     }
 
@@ -1092,8 +1092,8 @@ mod tests {
 
         assert!(tree.find(9), "find true");
         tree.remove(9);
-/*        assert!(!tree.find(9), "find false");
- 
+        /*        assert!(!tree.find(9), "find false");
+
         let nodes = tree.depth_first_in_order_recursive(None);
         assert_eq!(nodes, vec![&1, &2, &3, &4, &6, &7, &8, &10, &11]);
         assert_eq!(nodes.len(), tree.node_count());

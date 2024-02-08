@@ -1,17 +1,16 @@
-
 /*
   Удаление: создать очередь свободных индексов вместо nodes[None]
   Проблема - долгая вставка, как решить? Особенно в ставнении с std::collections::BinaryHeap
 */
 pub use llrb::Tree;
-mod llrb{
+mod llrb {
     use std::cmp::Ordering;
     use std::fmt::{Debug, Display};
 
     pub struct Tree<T> {
         root: Option<IndexNode>,
-        nodes: Vec<Option<Node<T>>>,// 0 => IndexNode
-        count: usize
+        nodes: Vec<Option<Node<T>>>, // 0 => IndexNode
+        count: usize,
     }
 
     #[derive(Debug, PartialEq, Clone, Copy)]
@@ -39,7 +38,7 @@ mod llrb{
         Nothing,
     }
 
-    impl<T: Ord + PartialEq + PartialOrd + Default + Display + Clone + Debug> Tree<T>{
+    impl<T: Ord + PartialEq + PartialOrd + Default + Display + Clone + Debug> Tree<T> {
         pub fn new(size: usize) -> Self {
             Self {
                 root: None,
@@ -51,31 +50,35 @@ mod llrb{
         pub fn put(&mut self, value: T) -> bool {
             if let Some(index_parent) = self.find_put_parent_candidate(self.root, &value) {
                 if self.attach_node(index_parent, value) {
-                   self.put_balancing(index_parent);
+                    self.put_balancing(index_parent);
                 }
-            }else{
-                if self.root.is_none(){
+            } else {
+                if self.root.is_none() {
                     self.nodes.push(Node::new_black(value));
                     self.root = Some(IndexNode::new(0));
-                }else{
-                   return false; 
+                } else {
+                    return false;
                 }
             }
             self.count += 1;
             true
         }
-        
-        fn get_mut_node(&mut self, index: &IndexNode) -> Option<&mut Node<T>>{
+
+        fn get_mut_node(&mut self, index: &IndexNode) -> Option<&mut Node<T>> {
             unsafe { self.nodes.get_unchecked_mut(index.0).as_mut() }
         }
-       
-        fn get_node(&self, index: &IndexNode) -> Option<&Node<T>>{
+
+        fn get_node(&self, index: &IndexNode) -> Option<&Node<T>> {
             unsafe { self.nodes.get_unchecked(index.0).as_ref() }
         }
-       
-        fn find_put_parent_candidate(&self, parent: Option<IndexNode>, elem: &T) -> Option<IndexNode> {
+
+        fn find_put_parent_candidate(
+            &self,
+            parent: Option<IndexNode>,
+            elem: &T,
+        ) -> Option<IndexNode> {
             if let Some(index_parent) = parent {
-                if let Some(parent_node) = self.get_node(&index_parent){
+                if let Some(parent_node) = self.get_node(&index_parent) {
                     match elem.cmp(&parent_node.value) {
                         Ordering::Equal => {
                             return None;
@@ -96,13 +99,13 @@ mod llrb{
                         }
                     }
                 }
-            } 
+            }
             return None;
         }
-       
+
         fn attach_node(&mut self, index_parent: IndexNode, elem: T) -> bool {
             self.nodes.push(Node::new_red(elem.clone(), index_parent));
-            let index = self.nodes.len()-1;
+            let index = self.nodes.len() - 1;
             let parent_node = self.get_mut_node(&index_parent).unwrap();
             match elem.cmp(&parent_node.value) {
                 Ordering::Equal => {
@@ -125,24 +128,24 @@ mod llrb{
                 let r = self.get_node(&node.right.unwrap()).unwrap();
                 if node.left.is_some() {
                     if !node.is_red {
-                        if let Some(l) = self.get_node(&node.left.unwrap()){
+                        if let Some(l) = self.get_node(&node.left.unwrap()) {
                             if l.is_red && r.is_red {
                                 return OperationPut::FlipColors;
                             }
-                        } 
+                        }
                     }
                 }
                 if r.is_red {
                     return OperationPut::Left;
                 }
             }
-            if node.is_red && node.left.is_some() && node.parent.is_some()  {
-                if let Some(l) = self.get_node(&node.left.unwrap()){
+            if node.is_red && node.left.is_some() && node.parent.is_some() {
+                if let Some(l) = self.get_node(&node.left.unwrap()) {
                     if l.is_red {
                         return OperationPut::Right;
                     }
                 }
-            }                
+            }
             return OperationPut::Nothing;
         }
 
@@ -157,9 +160,9 @@ mod llrb{
                         //        next = n;
                         //    }
                         //} else {
-                            if let Some(n) = self.rotate_left(next) {
-                                next = n;
-                            }
+                        if let Some(n) = self.rotate_left(next) {
+                            next = n;
+                        }
                         //}
                     }
                     OperationPut::Right => {
@@ -167,11 +170,11 @@ mod llrb{
                         let node_a = next_node.parent.unwrap();
                         if let Some(n) = self.rotate_right(node_a) {
                             next = n;
-                        } 
+                        }
                     }
                     OperationPut::FlipColors => {
                         self.flip_colors(next);
-                        if let Some(next_node) = self.get_node(&next){
+                        if let Some(next_node) = self.get_node(&next) {
                             if next_node.parent.is_some() {
                                 next = next_node.parent.unwrap();
                             } else {
@@ -185,7 +188,6 @@ mod llrb{
                 }
             }
         }
-
 
         /*
             Rotate left without parent
@@ -210,33 +212,31 @@ mod llrb{
 
         */
         fn rotate_left(&mut self, index_node_a: IndexNode) -> Option<IndexNode> {
-            
             if let Some(index_parent) = self.get_node(&index_node_a).unwrap().parent {
                 let mut node_a_from_left = false;
                 {
                     let parent = self.get_node(&index_parent).unwrap();
-                    
-                    if let Some(left) = parent.left{
+
+                    if let Some(left) = parent.left {
                         if left.eq(&index_node_a) {
                             node_a_from_left = true;
                         }
                     }
                 }
 
-                let (color_node_a,index_node_c) = {
+                let (color_node_a, index_node_c) = {
                     let node_a = self.get_node(&index_node_a).unwrap();
-                    (node_a.is_red,node_a.right.unwrap())
-                    
+                    (node_a.is_red, node_a.right.unwrap())
                 };
                 let index_node_e = {
-                   let node_c = self.get_mut_node(&index_node_c).unwrap(); 
-                   (*node_c).is_red = color_node_a; 
-                   (*node_c).parent = Some(index_parent);
-                   node_c.left
+                    let node_c = self.get_mut_node(&index_node_c).unwrap();
+                    (*node_c).is_red = color_node_a;
+                    (*node_c).parent = Some(index_parent);
+                    node_c.left
                 };
-                
+
                 if let Some(index_node_e) = index_node_e {
-                    if let Some(e) = self.get_mut_node(&index_node_e){
+                    if let Some(e) = self.get_mut_node(&index_node_e) {
                         (*e).parent = Some(index_node_a);
                     }
                     let node_a = self.get_mut_node(&index_node_a).unwrap();
@@ -246,27 +246,26 @@ mod llrb{
                     let node_a = self.get_mut_node(&index_node_a).unwrap();
                     (*node_a).is_red = true;
                     (*node_a).right = None;
-                }                    
-                 
+                }
+
                 {
-                    let node_c = self.get_mut_node(&index_node_c).unwrap(); 
+                    let node_c = self.get_mut_node(&index_node_c).unwrap();
                     (*node_c).left = Some(index_node_a);
                 }
-                
+
                 {
                     let node_a = self.get_mut_node(&index_node_a).unwrap();
                     (*node_a).parent = Some(index_node_c);
                 }
-                
+
                 let parent = self.get_mut_node(&index_parent).unwrap();
                 if node_a_from_left {
                     (*parent).left = Some(index_node_c);
                 } else {
                     (*parent).right = Some(index_node_c);
-                } 
+                }
                 return Some(index_node_c);
             } else {
-            
                 let node_a = self.get_node(&index_node_a).unwrap();
                 let color_node_a = node_a.is_red;
                 let index_node_c = node_a.right.unwrap();
@@ -282,17 +281,17 @@ mod llrb{
                     (*node_a).is_red = true;
                     (*node_a).right = index_node_e;
                 }
-            
+
                 if let Some(index_node_e) = index_node_e {
                     let node_e = self.get_mut_node(&index_node_e).unwrap();
                     (*node_e).parent = Some(index_node_a);
-                }  
+                }
 
                 {
                     let node_c = self.get_mut_node(&index_node_c).unwrap();
                     (*node_c).left = Some(index_node_a);
                 }
-               
+
                 {
                     let node_a = self.get_mut_node(&index_node_a).unwrap();
                     (*node_a).parent = Some(index_node_c);
@@ -302,13 +301,12 @@ mod llrb{
                     (*node_c).parent = None;
                 }
                 self.root = Some(index_node_c);
-                
-                return Some(index_node_c);  
+
+                return Some(index_node_c);
             }
-             
         }
 
-         /*
+        /*
             Rotate right without parent
             A is root
 
@@ -335,23 +333,22 @@ mod llrb{
                 let mut node_a_from_left = false;
                 {
                     let parent = self.get_node(&index_parent).unwrap();
-                    if let Some(left) = parent.left{
+                    if let Some(left) = parent.left {
                         if left.eq(&index_node_a) {
                             node_a_from_left = true;
                         }
                     }
                 }
-                let (color_node_a,index_node_b) = {
+                let (color_node_a, index_node_b) = {
                     let node_a = self.get_mut_node(&index_node_a).unwrap();
                     let color = node_a.is_red;
                     (*node_a).is_red = true;
-                    (color,node_a.left.unwrap())
-                    
+                    (color, node_a.left.unwrap())
                 };
- 
+
                 let index_node_d = {
-                    let node_b = self.get_mut_node(&index_node_b).unwrap(); 
-                    (*node_b).is_red = color_node_a; 
+                    let node_b = self.get_mut_node(&index_node_b).unwrap();
+                    (*node_b).is_red = color_node_a;
                     (*node_b).parent = Some(index_parent);
                     node_b.right
                 };
@@ -369,10 +366,10 @@ mod llrb{
                 }
 
                 {
-                    let node_b = self.get_mut_node(&index_node_b).unwrap(); 
+                    let node_b = self.get_mut_node(&index_node_b).unwrap();
                     (*node_b).right = Some(index_node_a);
                 }
-                 
+
                 let parent = self.get_mut_node(&index_parent).unwrap();
                 if node_a_from_left {
                     (*parent).left = Some(index_node_b);
@@ -394,13 +391,12 @@ mod llrb{
                     let node_a = self.get_mut_node(&index_node_a).unwrap();
                     (*node_a).is_red = true;
                     (*node_a).parent = Some(index_node_b);
-
                 }
-                
+
                 if let Some(index_node_d) = index_node_d {
                     let node_d = self.get_mut_node(&index_node_d).unwrap();
                     (*node_d).parent = Some(index_node_a);
-                    
+
                     let node_a = self.get_mut_node(&index_node_a).unwrap();
                     (*node_a).left = Some(index_node_d);
                 } else {
@@ -413,7 +409,7 @@ mod llrb{
                     (*node_b).parent = None;
                 }
                 self.root = Some(index_node_b);
-                return Some(index_node_b);   
+                return Some(index_node_b);
             }
         }
 
@@ -427,35 +423,35 @@ mod llrb{
 
         */
         fn flip_colors(&mut self, index: IndexNode) {
-           if let Some(node) = self.get_mut_node(&index){
+            if let Some(node) = self.get_mut_node(&index) {
                 if node.left.is_some() && node.right.is_some() {
                     (*node).is_red = true;
                     if node.parent.is_none() {
                         (*node).is_red = false;
                     }
-                }else{
+                } else {
                     return ();
                 }
-            }else{
+            } else {
                 return ();
             }
-            
+
             let i = self.get_mut_node(&index).unwrap().left.unwrap();
             let left = self.get_mut_node(&i).unwrap();
             (*left).is_red = false;
             let i = self.get_mut_node(&index).unwrap().right.unwrap();
             let right = self.get_mut_node(&i).unwrap();
-            right.is_red = false;                
+            right.is_red = false;
         }
 
         /// DOT specification.
         /// TODO: open http://www.webgraphviz.com/?tab=map
         /// or https://dreampuf.github.io/GraphvizOnline/
         pub fn display(&self) -> String {
-            if let Some(index_root) = self.root{
-                return format!("\n\ndigraph Tree {{\n\tratio = fill;\n\tnode [style=filled fontcolor=\"white\"];\n{}}}",self.helper_display_tree(index_root)); 
+            if let Some(index_root) = self.root {
+                return format!("\n\ndigraph Tree {{\n\tratio = fill;\n\tnode [style=filled fontcolor=\"white\"];\n{}}}",self.helper_display_tree(index_root));
             }
-            "\nTree is empty".into() 
+            "\nTree is empty".into()
         }
 
         fn helper_display_tree(&self, index_node: IndexNode) -> String {
@@ -468,7 +464,7 @@ mod llrb{
             };
 
             if let Some(index_left) = node.left {
-                if let Some(left) = self.get_node(&index_left){
+                if let Some(left) = self.get_node(&index_left) {
                     s.push_str(&format!(
                         "\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n",
                         n1 = node.value,
@@ -494,7 +490,7 @@ mod llrb{
             }
 
             if let Some(index_right) = node.right {
-                if let Some(right) = self.get_node(&index_right){
+                if let Some(right) = self.get_node(&index_right) {
                     s.push_str(&format!(
                         "\t{n1}->{n2} {color1}; {n1} {color1}; {n2} {color2};\n",
                         n1 = node.value,
@@ -513,21 +509,17 @@ mod llrb{
                     n1 = node.value,
                     color1 = color
                 ));
-                s.push_str(&format!(
-                    "\tnode_null_{}[label=\"null\"]\n",
-                    node.value
-                ));
+                s.push_str(&format!("\tnode_null_{}[label=\"null\"]\n", node.value));
             }
 
             if let Some(index_left) = node.left {
-                s.push_str(&self.helper_display_tree(index_left));  
+                s.push_str(&self.helper_display_tree(index_left));
             }
             if let Some(index_right) = node.right {
-                s.push_str(&self.helper_display_tree(index_right));  
+                s.push_str(&self.helper_display_tree(index_right));
             }
 
             s
-         
         }
 
         pub fn helper_is_a_valid_red_black_tree(&self) -> bool {
@@ -548,7 +540,7 @@ mod llrb{
             is_red: bool,
             black_height: usize,
         ) -> (usize, usize, usize) {
-            if let Some(index_node) = index_node{
+            if let Some(index_node) = index_node {
                 if let Some(n) = self.get_node(index_node) {
                     let red_red = if is_red && n.is_red { 1 } else { 0 };
                     let black_height = black_height
@@ -565,34 +557,33 @@ mod llrb{
                     );
                 }
             } else {
-               return (0, black_height, black_height);
-            } 
+                return (0, black_height, black_height);
+            }
             return (0, black_height, black_height);
         }
     }
 
     impl<T: Default + Display> Node<T> {
-        pub fn new_black(value: T) -> Option<Node<T>> {    
-            Some(Node{
+        pub fn new_black(value: T) -> Option<Node<T>> {
+            Some(Node {
                 left: None,
                 right: None,
                 parent: None,
                 is_red: false,
-                value, 
-            })  
+                value,
+            })
         }
 
         pub fn new_red(value: T, index_parent: IndexNode) -> Option<Node<T>> {
-            Some(Node{
+            Some(Node {
                 left: None,
                 right: None,
                 parent: Some(index_parent),
                 is_red: true,
-                value, 
-            })  
+                value,
+            })
         }
     }
- 
 }
 
 /// $ cargo +nightly miri test red_black_tree_vec
@@ -600,7 +591,7 @@ mod llrb{
 #[cfg(test)]
 mod tests {
     use super::*;
- 
+
     #[test]
     fn test_success() {
         let nodes = vec![
@@ -621,5 +612,4 @@ mod tests {
 
         assert!(tree.helper_is_a_valid_red_black_tree());
     }
-
 }
