@@ -1,11 +1,26 @@
 #![allow(unused_imports)]
 
-use ds::{red_black_tree_nonnull, stack_array, stack_linked_list, stack_vec, binary_search_tree_good_nonnull};
+use ds::{red_black_tree_nonnull, stack_array, stack_linked_list, stack_vec, binary_search_tree_good_nonnull, red_black_tree_vec};
 
-use red_black_tree_nonnull::Tree;
 use std::time::Instant;
 
-fn main() {
+fn main(){
+    cmp_llrb_vs_vec();
+    
+    cmp_llrb_ptr_vs_vec(); 
+}
+
+/*
+
+N = 16_777_216, Tree H=24
+
+
+LLRB Find ----------- :4310 nanos
+Vec Find with sort -- :230 millis
+Vec Find without sort :142 millis
+
+*/
+fn cmp_llrb_vs_vec() {
     let size = 16_777_216;
     let mut src = Vec::with_capacity(size);
     let mut for_find = vec![];
@@ -27,7 +42,7 @@ fn main() {
     // LLRB
 
     let src: Vec<u64> = red_black_tree_nonnull::helper_prepare_batch_put(&mut src);
-    let mut tree: Tree<u64> = Tree::new();
+    let mut tree = red_black_tree_nonnull::Tree::new();
     let now = Instant::now();
     for i in src.iter() {
         tree.put(*i);
@@ -64,13 +79,46 @@ fn main() {
     );
 }
 
+
 /*
+LLRB ptr Insert :21378 millis
 
-N = 16_777_216, Tree H=24
-
-
-LLRB Find ----------- :4310 nanos
-Vec Find with sort -- :230 millis
-Vec Find without sort :142 millis
-
+LLRB Vec Insert :24780 millis
 */
+fn cmp_llrb_ptr_vs_vec(){
+     
+    let size = 16_777_216;
+    let mut src = Vec::with_capacity(size);
+    let mut for_find = vec![];
+    for _ in 0..size {
+        src.push(rand::random::<u64>());
+    }
+
+    loop {
+        let value = rand::random::<u64>();
+        if !src.contains(&value) {
+            for_find.push(value);
+        }
+        if for_find.len() == 50 {
+            break;
+        }
+    }
+     
+    let now = Instant::now();
+    let mut tree = red_black_tree_nonnull::Tree::new();
+    for i in src.iter() {
+        tree.put(*i);
+    }
+    println!("LLRB ptr Insert :{} millis", now.elapsed().as_millis());
+    assert!(tree.helper_is_a_valid_red_black_tree());
+
+
+    let now = Instant::now();
+    let mut tree = red_black_tree_vec::Tree::new(src.len());
+    for i in src.iter() {
+        tree.put(*i);
+    }
+    println!("LLRB Vec Insert :{} millis", now.elapsed().as_millis());
+    assert!(tree.helper_is_a_valid_red_black_tree());
+
+}
