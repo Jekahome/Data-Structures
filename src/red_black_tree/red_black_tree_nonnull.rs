@@ -2197,7 +2197,7 @@ mod llrb {
     }
 }
 
-/// $ cargo +nightly miri test red_black_tree_nonnull
+/// $ MIRIFLAGS="-Zmiri-tag-raw-pointers" cargo +nightly miri test red_black_tree_nonnull
 /// $ cargo test red_black_tree_nonnull -- --test-threads=1
 /// $ cargo test red_black_tree_nonnull --no-default-features --features pre-order -- --nocapture
 /// $ cargo test red_black_tree_nonnull --no-default-features --features post-order -- --nocapture
@@ -2226,8 +2226,9 @@ mod tests {
         println!("{}", tree.display());
         tree.helper_checking_connections();
         assert!(tree.helper_is_a_valid_red_black_tree());
+ 
     }
-
+ 
     // $ cargo test red_black_tree::red_black_tree_nonnull::tests::test_rotate_right_success -- --nocapture
     #[test]
     fn test_rotate_right_success() {

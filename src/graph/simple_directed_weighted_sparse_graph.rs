@@ -3,13 +3,14 @@
 
 // Простой направленный взвешенный разреженный граф
 
-use sdws_graph::{Graph, IndexVertex, PrepareInput, Vertex};
+pub use sdws_graph::{Graph, IndexVertex, PrepareInput, Vertex};
 mod sdws_graph {
     use serde::{Deserialize, Serialize};
     use std::cmp::Ordering;
     use std::collections::{BinaryHeap, HashSet, VecDeque};
     use std::fmt::{Debug, Display};
     use std::ops::Add;
+    use smallvec::{SmallVec, smallvec};
 
     #[derive(Debug, PartialEq, Clone, Copy)]
     pub struct IndexVertex(usize);
@@ -28,7 +29,8 @@ mod sdws_graph {
 
     pub struct Graph<T, W> {
         vertexes: Vec<Option<Vertex<T, W>>>,
-        edges: Vec<Option<Vec<(W, IndexVertex)>>>,
+        //edges: Vec<Option<Vec<(W, IndexVertex)>>>, // SmallVec<[i32; 4]>
+        edges: Vec<Option<SmallVec<[(W, IndexVertex);3]>>>, 
     }
 
     #[derive(Debug, PartialEq)]
@@ -38,6 +40,9 @@ mod sdws_graph {
         previous_vertex: Option<IndexVertex>,
         visited: bool,
     }
+
+    unsafe impl<T: Send,W: Send> Send for Graph<T,W> {}
+    unsafe impl<T: Sync,W: Sync> Sync for Graph<T,W> {}
 
     /// Graph
     impl<
@@ -82,7 +87,7 @@ mod sdws_graph {
             }
             graph
         }
-
+  
         pub fn add(&mut self, data: PrepareInput<T, W>) -> bool {
             let index_from = if self.vertex_contains(&data.from) {
                 self.find_vertex(&data.from).unwrap()
@@ -131,7 +136,7 @@ mod sdws_graph {
             if let Some(ref mut edges) = self.edges[index_from_vertex.0] {
                 edges.push((weight, index_to_vertex)); // возможны дубликаты!
             } else {
-                self.edges[index_from_vertex.0] = Some(vec![(weight, index_to_vertex)]);
+                self.edges[index_from_vertex.0] = Some(smallvec![(weight, index_to_vertex)]);
             }
         }
 
@@ -181,9 +186,9 @@ mod sdws_graph {
             unsafe { self.vertexes.get_unchecked(index.0).as_ref() }
         }
 
-        fn get_edges(&self, index_vertex: &IndexVertex) -> Option<&Vec<(W, IndexVertex)>> {
-            if let Some(edge) = self.edges.get(index_vertex.0) {
-                return edge.as_ref();
+        fn get_edges(&self, index_vertex: &IndexVertex) -> Option<&[(W, IndexVertex)]> {
+            if let Some(Some(edge)) = self.edges.get(index_vertex.0) {
+                return Some(edge.as_slice());
             }
             None
         }
@@ -514,12 +519,12 @@ mod tests {
     #[test]
     fn test_bfs_success() {
         let input: Vec<PrepareInput<String, u8>> = vec![
-            PrepareInput::new("A0".to_string(), Some(("B1".to_string(), 4))), // A 0
+            PrepareInput::new("A0".to_string(), Some(("B1".to_string(), 4))),  // A 0
             PrepareInput::new("B1".to_string(), Some(("D2".to_string(), 10))), // B 1, D 2
             PrepareInput::new("D2".to_string(), Some(("F3".to_string(), 11))), // F 3
-            PrepareInput::new("A0".to_string(), Some(("C4".to_string(), 2))), // C 4
+            PrepareInput::new("A0".to_string(), Some(("C4".to_string(), 2))),  // C 4
             PrepareInput::new("B1".to_string(), Some(("C4".to_string(), 5))),
-            PrepareInput::new("C4".to_string(), Some(("E5".to_string(), 3))), // E 5
+            PrepareInput::new("C4".to_string(), Some(("E5".to_string(), 3))),  // E 5
             PrepareInput::new("E5".to_string(), Some(("D2".to_string(), 4))),
         ];
         let mut graph: Graph<String, u8> = Graph::new();

@@ -9,7 +9,7 @@ mod llrb {
 
     pub struct Tree<T> {
         root: Option<IndexNode>,
-        nodes: Vec<Option<Node<T>>>, // 0 => IndexNode
+        pub nodes: Vec<Option<Node<T>>>, // 0 => IndexNode
         count: usize,
     }
 
@@ -28,7 +28,7 @@ mod llrb {
         right: Option<IndexNode>,
         parent: Option<IndexNode>,
         is_red: bool,
-        value: T,
+        pub value: T,
     }
 
     enum OperationPut {
@@ -64,6 +64,47 @@ mod llrb {
             true
         }
 
+        /// Найти следующий элемент данного элемента в дереве.  
+        /// Симметричный поиск в глубину (In-order).
+        #[cfg(feature = "in-order")]
+        pub fn successor_dfs_in_order(&self, value: T) -> Option<&T> {
+            unimplemented!();
+            /*let node = self.find_node(self.root, &value);
+            if let Some(n) = node {
+                if let Some(index) = n.0.checked_add(1){
+                    if let Some(next_node) = self.get_node_checked(&IndexNode::new(index)){
+                        return Some(&next_node.value);
+                    }
+                }  
+            }*/
+            None
+        }
+
+        #[cfg(feature = "in-order")]
+        pub fn iter_dfs_in_order(&self) -> impl Iterator<Item=Option<&Node<T>>> {
+            unimplemented!();
+           self.nodes.iter().map(|v|v.as_ref())
+        }
+
+        pub fn find_node(
+            &self,
+            fromnode: Option<IndexNode>,
+            value: &T,
+        ) -> Option<IndexNode> {
+            if let Some(index_from_node) = fromnode {
+                if let Some(node) = self.get_node(&index_from_node) {
+                   return match value.cmp(&node.value) {
+                        Ordering::Equal => fromnode,
+                        Ordering::Less => self.find_node(node.left, value),
+                        Ordering::Greater => self.find_node(node.right, value),
+                    };
+                }
+                return fromnode;
+            } else {
+                fromnode
+            }
+        }
+
         fn get_mut_node(&mut self, index: &IndexNode) -> Option<&mut Node<T>> {
             unsafe { self.nodes.get_unchecked_mut(index.0).as_mut() }
         }
@@ -71,7 +112,12 @@ mod llrb {
         fn get_node(&self, index: &IndexNode) -> Option<&Node<T>> {
             unsafe { self.nodes.get_unchecked(index.0).as_ref() }
         }
-
+        fn get_node_checked(&self, index: &IndexNode) -> Option<&Node<T>> {
+            if let Some(n) = self.nodes.get(index.0){
+                return n.as_ref();
+            }
+            None
+        }
         fn find_put_parent_candidate(
             &self,
             parent: Option<IndexNode>,
@@ -79,7 +125,7 @@ mod llrb {
         ) -> Option<IndexNode> {
             if let Some(index_parent) = parent {
                 if let Some(parent_node) = self.get_node(&index_parent) {
-                    match elem.cmp(&parent_node.value) {
+                     match elem.cmp(&parent_node.value) {
                         Ordering::Equal => {
                             return None;
                         }
@@ -586,7 +632,7 @@ mod llrb {
     }
 }
 
-/// $ cargo +nightly miri test red_black_tree_vec
+/// $ MIRIFLAGS="-Zmiri-tag-raw-pointers" cargo +nightly miri test red_black_tree_vec
 /// $ cargo test red_black_tree_vec -- --nocapture
 #[cfg(test)]
 mod tests {
@@ -611,5 +657,43 @@ mod tests {
         println!("{}", tree.display());
 
         assert!(tree.helper_is_a_valid_red_black_tree());
+    }
+
+    // $ cargo test red_black_tree::red_black_tree_vec::tests::test_speed_success -- --nocapture
+    #[ignore]
+    #[test]
+    fn test_speed_success() {
+        
+        let mut tree: Tree<i32> = Tree::new(10);
+        for i in (0..10).into_iter().rev() {
+            tree.put(i);
+        }
+
+         println!("{}", tree.display());
+
+        //assert!(tree.helper_is_a_valid_red_black_tree());
+
+        println!("iter_dfs_in_order:\n");
+        for (i,n) in tree.iter_dfs_in_order().enumerate(){
+            let node = n.unwrap();
+            println!("index={} value={:?}", i, node.value );
+        }
+
+        println!("\n\nsuccessor_dfs_in_order:\n");
+        for current_value in 0..10 {
+            if let Some(next_value) = tree.successor_dfs_in_order(current_value){
+                println!("current_value={} next_value={:?}", current_value, next_value);
+            }else{
+                println!("current_value={} next_value=None", current_value);
+            }
+        }
+        
+
+        println!("\n\ntree.nodes:\n");
+        for (i,n) in tree.nodes.into_iter().enumerate(){
+            let node = n.unwrap();
+            println!("index={} value={:?}", i, node.value );
+        }
+
     }
 }

@@ -2,15 +2,16 @@
 
 use ds::{
     binary_search_tree_good_nonnull, red_black_tree_nonnull, red_black_tree_vec, stack_array,
-    stack_linked_list, stack_vec,
+    stack_linked_list, stack_vec, simple_directed_weighted_sparse_graph
 };
 
 use std::time::Instant;
 
 fn main() {
-    cmp_llrb_vs_vec();
+     cmp_llrb_vs_vec();
 
-    cmp_llrb_ptr_vs_vec();
+    // cmp_llrb_ptr_vs_vec();
+ 
 }
 
 /*
@@ -66,6 +67,7 @@ fn cmp_llrb_vs_vec() {
         result_find.iter().sum::<u128>() / result_find.len() as u128
     );
 
+   
     // Vec
     let mut result_find = vec![];
     for value in for_find.iter() {
@@ -113,6 +115,7 @@ fn cmp_llrb_ptr_vs_vec() {
     println!("LLRB ptr Insert :{} millis", now.elapsed().as_millis());
     assert!(tree.helper_is_a_valid_red_black_tree());
 
+ 
     let now = Instant::now();
     let mut tree = red_black_tree_vec::Tree::new(src.len());
     for i in src.iter() {
@@ -120,4 +123,8 @@ fn cmp_llrb_ptr_vs_vec() {
     }
     println!("LLRB Vec Insert :{} millis", now.elapsed().as_millis());
     assert!(tree.helper_is_a_valid_red_black_tree());
+ 
 }
+
+ 
+ 
