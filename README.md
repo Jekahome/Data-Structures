@@ -71,6 +71,7 @@ FIFO (first-in, first-out) "Первым пришел - первым ушел»"
 
 [BinaryHeap max/min-heap](https://doc.rust-lang.org/std/collections/struct.BinaryHeap.html) Куча является максимально эффективной реализации очереди с приоритетом. 
  
+[Алгоритмы сортировки кучи](https://habr.com/ru/company/edison/blog/499786/))
 
 ## Linked list
 
@@ -814,6 +815,7 @@ Storage `O(V+E)`, Add Vertex `O(1)`, Add Edge `O(1)`, Remove Vertex `O(V+E)`, Re
 
 Предположим, что что-то можно сделать разными способами. Например, добраться от дома до работы мы можем разными способами: поехать на машине, пойти пешком или воспользоваться самокатом. Все эти действия можно представить в виде графа, где дугами будет являться продолжительность определённых действий. Для поиска самого быстрого способа необходимо найти кратчайший путь между начальной и конечной вершиной.
 
+[dijkstra](https://github.com/TheAlgorithms/Rust/blob/master/src/graph/dijkstra.rs)
 
 [Graph Поиск в ширину](https://ru.algorithmica.org/cs/shortest-paths/bfs/)
 
@@ -832,3 +834,6 @@ Storage `O(V+E)`, Add Vertex `O(1)`, Add Edge `O(1)`, Remove Vertex `O(V+E)`, Re
 [Graphs in Rust: An Introduction to Petgraph](https://depth-first.com/articles/2020/02/03/graphs-in-rust-an-introduction-to-petgraph/)
 
 [Самая быстрая и энергоэффективная реализация алгоритма BFS на различных параллельных архитектурах](https://habr.com/ru/articles/344378/)
+
+![DSA_Roadmap](https://github.com/Jekahome/Data-Structures/blob/main/_img/DSA_Roadmap.png "DSA_Roadmap")
+ 
