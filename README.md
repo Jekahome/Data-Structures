@@ -15,7 +15,7 @@
 - Trie
 - Graph
 
-![Table DS.](https://github.com/Jekahome/Algorithms/blob/main/_img/table.jpeg "Table DS.")
+![Table DS.](https://github.com/Jekahome/Data-Structures/blob/main/_img/table.jpeg "Table DS.")
 
 ## Stack
     
