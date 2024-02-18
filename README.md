@@ -11,8 +11,11 @@
 - Set
 - Map (Hash Table)
 - Binary search tree
+- Red-Black Tree
 - Trie
 - Graph
+
+![Table DS.](https://github.com/Jekahome/Algorithms/blob/main/_img/table.jpeg "Table DS.")
 
 ## Stack
     
