@@ -1,3 +1,23 @@
+# Data Structures
+
+* [Зачем нужно знать структуры данных и чем они полезны](https://github.com/Jekahome/Data-Structures#зачем-нужно-знать-структуры-данных-и-чем-они-полезны)
+* [Stack](https://github.com/Jekahome/Data-Structures#stack)
+* [Queue](https://github.com/Jekahome/Data-Structures#queue)
+* [Linked list](https://github.com/Jekahome/Data-Structures#linked-list)
+* [Set](https://github.com/Jekahome/Data-Structures#set-множество)
+* [Map](https://github.com/Jekahome/Data-Structures#map-hash-table)
+* [Tree Data Structure](https://github.com/Jekahome/Data-Structures#tree-data-structure)
+* [B-Tree](https://github.com/Jekahome/Data-Structures#b-tree)
+* [R-Tree](https://github.com/Jekahome/Data-Structures#r-дерево)
+* [Binary Tree](https://github.com/Jekahome/Data-Structures#binary-tree)
+* [Red-Black Tree](https://github.com/Jekahome/Data-Structures#red-black-tree)
+* [AVL Tree](https://github.com/Jekahome/Data-Structures#авл-дерево-avl-tree)
+* [Splay-Tree](https://github.com/Jekahome/Data-Structures#splay-дерево)
+* [Binary search tree](https://github.com/Jekahome/Data-Structures#binary-search-tree-двоичное-дерево-поиска)
+* [Balancing tree](https://github.com/Jekahome/Data-Structures#балансировка)
+* [Heap](https://github.com/Jekahome/Data-Structures#heap)
+* [Graph](https://github.com/Jekahome/Data-Structures#graph)
+ 
 ## Зачем нужно знать структуры данных и чем они полезны.
 
 Хорошо подобранная структура данных позволяет эффективно манипулировать этими данными. 
